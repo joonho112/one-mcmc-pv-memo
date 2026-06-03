@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.37">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>7&nbsp; Pipeline B: Importance Sampling, Tempering, and Diagnostics – Making Pipelines B and C Legible</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./08-operators-in-code.html" rel="next">
+<link href="./06-ccc-beta-only.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-9ece03dab9959ef5c886c0d317450186.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="nav-sidebar floating quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./03-licensing-identity.html">II · Mathematical Theory</a></li><li class="breadcrumb-item"><a href="./07-pipeline-b-importance-sampling.html"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Pipeline B: Importance Sampling, Tempering, and Diagnostics</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Making Pipelines B and C Legible</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/joonho112/one-mcmc-pv-memo" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">I · Orientation</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01-three-pipelines-one-picture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Three Pipelines in One Picture</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02-questions-and-roadmap.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Your Questions, Restated — and a Roadmap</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">II · Mathematical Theory</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03-licensing-identity.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">The Licensing Identity: One Fit Gives the Pooled Point Estimate</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04-pv-to-parameter-variance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">From Plausible-Value Variance to Parameter Variance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05-where-tmi-comes-from.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Where the External Variance Comes From: BRR-Fay Assembly</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06-ccc-beta-only.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">The Cholesky Calibration Correction, and Why Only the Betas</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./07-pipeline-b-importance-sampling.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Pipeline B: Importance Sampling, Tempering, and Diagnostics</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">III · Code</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./08-operators-in-code.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">The Operators in Code</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">IV · Simulated-Data Demonstration</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./09-controlled-experiment.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">A Controlled Experiment with Known Truth</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./10-recovery-results.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Recovery Results: Does Pipeline C Find the Truth?</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./11-pipeline-b-tempering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Pipeline B in Practice: a Tempering Experiment</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">V · PISA 2022 Application</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./12-pisa-data-model.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">PISA 2022: Data and Model Setup</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./13-pisa-results.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">PISA 2022: Three Pipelines, Side by Side</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">VI · Synthesis</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./14-response-to-matt.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Response to Your Comments</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-pipeb" id="toc-sec-pipeb" class="nav-link active" data-scroll-target="#sec-pipeb"><span class="header-section-number">7.1</span> A collaborative starting point</a></li>
+  <li><a href="#the-pipeline-b-algorithm" id="toc-the-pipeline-b-algorithm" class="nav-link" data-scroll-target="#the-pipeline-b-algorithm"><span class="header-section-number">7.2</span> The Pipeline B algorithm</a></li>
+  <li><a href="#the-pareto-hat-k-gate-double-check-the-pareto-version-formalized" id="toc-the-pareto-hat-k-gate-double-check-the-pareto-version-formalized" class="nav-link" data-scroll-target="#the-pareto-hat-k-gate-double-check-the-pareto-version-formalized"><span class="header-section-number">7.3</span> The Pareto <span class="math inline">\(\hat k\)</span> gate: “double check the pareto version,” formalized</a></li>
+  <li><a href="#island-modes-the-geometry-you-anticipated" id="toc-island-modes-the-geometry-you-anticipated" class="nav-link" data-scroll-target="#island-modes-the-geometry-you-anticipated"><span class="header-section-number">7.4</span> Island modes: the geometry you anticipated</a></li>
+  <li><a href="#your-tempering-idea-formalized" id="toc-your-tempering-idea-formalized" class="nav-link" data-scroll-target="#your-tempering-idea-formalized"><span class="header-section-number">7.5</span> Your tempering idea, formalized</a></li>
+  <li><a href="#your-two-mcmc-option" id="toc-your-two-mcmc-option" class="nav-link" data-scroll-target="#your-two-mcmc-option"><span class="header-section-number">7.6</span> Your two-MCMC option</a></li>
+  <li><a href="#pipeline-b-and-c-direct-complementary-not-rivals" id="toc-pipeline-b-and-c-direct-complementary-not-rivals" class="nav-link" data-scroll-target="#pipeline-b-and-c-direct-complementary-not-rivals"><span class="header-section-number">7.7</span> Pipeline B and C-Direct: complementary, not rivals</a></li>
+  <li><a href="#honest-scope-and-attribution" id="toc-honest-scope-and-attribution" class="nav-link" data-scroll-target="#honest-scope-and-attribution"><span class="header-section-number">7.8</span> Honest scope and attribution</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/joonho112/one-mcmc-pv-memo/blob/main/07-pipeline-b-importance-sampling.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/joonho112/one-mcmc-pv-memo/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./03-licensing-identity.html">II · Mathematical Theory</a></li><li class="breadcrumb-item"><a href="./07-pipeline-b-importance-sampling.html"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Pipeline B: Importance Sampling, Tempering, and Diagnostics</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Pipeline B: Importance Sampling, Tempering, and Diagnostics</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="sec-pipeb" class="level2" data-number="7.1">
+<h2 data-number="7.1" class="anchored" data-anchor-id="sec-pipeb"><span class="header-section-number">7.1</span> A collaborative starting point</h2>
+<p>This chapter takes its brief from your comment beside the bridge formula:</p>
+<div class="matt">
+<p><strong>C1:</strong> This seems like a good starting point, esp for the point estimates. For importance sampling we may want to further fit a second time and further temper to get better proposal values that are more likely to include the modes from the replicate distributions. Should double check the pareto version of importance sampling.</p>
+</div>
+<p>and from your email:</p>
+<div class="matt">
+<p>…higher multiples of <span class="math inline">\(M\)</span> (say <span class="math inline">\(1/2M\)</span> or <span class="math inline">\(1/3M\)</span>) to flatten out the proposal distribution … Each of the <span class="math inline">\(M\)</span> target distributions could be shifted away from the overall mode … the mode could be islands with less overlap … too much tempering could skew the point estimates, hence wanting to run it for the <span class="math inline">\(1/M\)</span> first.</p>
+</div>
+<p>These are not points to rebut — they are the design brief for Pipeline B as it stands. The Pareto check you asked for is built in; the tempering you sketched is a single code knob; the second-fit idea is a real option. The rest of the chapter explains why all three cohere.</p>
+</section>
+<section id="the-pipeline-b-algorithm" class="level2" data-number="7.2">
+<h2 data-number="7.2" class="anchored" data-anchor-id="the-pipeline-b-algorithm"><span class="header-section-number">7.2</span> The Pipeline B algorithm</h2>
+<p>Pipeline B shares one stacked MCMC fit with Pipeline C-Direct, then treats the bridge as a <em>proposal</em> and each per-PV posterior as a <em>target</em>, recovering per-PV summaries by importance reweighting.</p>
+<ol type="1">
+<li><strong>One stacked MCMC.</strong> Fit <span class="math inline">\(q_{\text{SWL}}(\psi)\propto p(\psi)\prod_m L_m^0(\psi)^{1/M}\)</span> once, giving draws <span class="math inline">\(\{\beta_s\}_{s=1}^S\)</span> of <span class="math inline">\(\beta_{\text{FE}}\)</span>.</li>
+<li><strong>Per-PV importance weights.</strong> For each PV, <span class="math display">\[
+\log w_{m,s} = \log L_m^0(\beta_s) - \frac1M\sum_{m'=1}^M\log L_{m'}^0(\beta_s),
+\]</span> the per-PV log-likelihood minus the log geometric-mean bridge density.</li>
+<li><strong>PSIS smoothing.</strong> Pass <code>log_r = log_p − log_q</code> to <code>loo::psis()</code>; a generalized Pareto fit to the upper tail returns smoothed weights <span class="math inline">\(\tilde w_{m,s}\)</span> and the shape diagnostic <span class="math inline">\(\hat k_m\)</span> <span class="citation" data-cites="vehtari_pareto_2024">(<a href="#ref-vehtari_pareto_2024" role="doc-biblioref">Vehtari et al. 2024</a>)</span>.</li>
+<li><strong>Per-PV center.</strong> <span class="math inline">\(\hat\beta_m^{\text{PSIS}} = \sum_s \tilde w_{m,s}\,\beta_s\)</span> — an <span class="math inline">\(O_p(S^{-1/2})\)</span> estimator, <em>not</em> the exact identity of <a href="03-licensing-identity.html#sec-identity" class="quarto-xref"><span>Section 3.1</span></a> (that is why Pipeline B does not inherit Theorem 2.2).</li>
+<li><strong>Weighted CCC.</strong> Calibrate each per-PV cloud to the survey-design target <span class="math inline">\(\hat U_m^{\text{BRR-Fay}}\)</span> with center <span class="math inline">\(\hat\beta_m^{\text{PSIS}}\)</span> and the PSIS weights, using the self-normalized weighted covariance of the draws before the Cholesky map (<a href="06-ccc-beta-only.html#sec-ccc" class="quarto-xref"><span>Section 6.1</span></a>).</li>
+<li><strong>Rubin pool.</strong> <span class="math inline">\(\bar\beta_{\text{Rubin}} = M^{-1}\sum_m\hat\beta_m^{\text{PSIS}}\)</span>, <span class="math inline">\(T_{\text{MI}} = \bar U + (1+1/M)B\)</span>; all SEs and intervals come from <span class="math inline">\((\bar\beta_{\text{Rubin}},T_{\text{MI}})\)</span>.</li>
+</ol>
+<p>The runner is <code>pipeline_b_stacked_psis()</code>; the PSIS core is <code>pipeline_b_psis_density_pair()</code> (<a href="08-operators-in-code.html#sec-operators" class="quarto-xref"><span>Section 8.1</span></a>).</p>
+</section>
+<section id="the-pareto-hat-k-gate-double-check-the-pareto-version-formalized" class="level2" data-number="7.3">
+<h2 data-number="7.3" class="anchored" data-anchor-id="the-pareto-hat-k-gate-double-check-the-pareto-version-formalized"><span class="header-section-number">7.3</span> The Pareto <span class="math inline">\(\hat k\)</span> gate: “double check the pareto version,” formalized</h2>
+<p>Your instruction to “double check the pareto version” is exactly the <span class="math inline">\(\hat k_m\)</span> diagnostic. <span class="math inline">\(\hat k_m\)</span> measures how heavy the upper tail of the weight distribution is — how much of the total weight a few draws carry. The standard tiers <span class="citation" data-cites="vehtari_pareto_2024">(<a href="#ref-vehtari_pareto_2024" role="doc-biblioref">Vehtari et al. 2024</a>)</span> (sample-size-dependent rules of thumb, not sharp cutoffs):</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th><span class="math inline">\(\hat k_m\)</span></th>
+<th>Status</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">\(&lt;0.5\)</span></td>
+<td>Green — reliable</td>
+<td>report Pipeline B</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\([0.5,0.7)\)</span></td>
+<td>Yellow — caution</td>
+<td>report B with per-PV <span class="math inline">\(\hat k\)</span> + mandatory C-Direct cross-check</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(\ge 0.7\)</span></td>
+<td>Red — unreliable</td>
+<td>fall back to Pipeline A for that PV, or to C-Direct entirely</td>
+</tr>
+</tbody>
+</table>
+<p>In code, <code>khat &lt;- max(loo::pareto_k_values(psis_obj))</code> per PV. The gate is the safety valve: where <span class="math inline">\(\hat k&lt;0.7\)</span>, B and C-Direct agree in <em>point</em> and B adds per-PV richness; where <span class="math inline">\(\hat k\ge0.7\)</span>, C-Direct is valid because it never builds importance weights. One caveat the gate does <em>not</em> cover: a small <span class="math inline">\(\hat k\)</span> certifies the importance sampling is stable, not that B’s pooled <em>standard errors</em> match the orthodox target — on the real PISA data (<a href="13-pisa-results.html#sec-pisa-results" class="quarto-xref"><span>Section 13.1</span></a>) B’s intervals run narrow even at <span class="math inline">\(\hat k\le0.07\)</span>, because B reweights one shared draw cloud. So “report Pipeline B” means its point and its <span class="math inline">\(\hat k\)</span>; its intervals stay a cross-check against C-Direct. Whether PISA <span class="math inline">\(\hat k\)</span> stays <span class="math inline">\(&lt;0.7\)</span> is an empirical question we <strong>test</strong> in <a href="11-pipeline-b-tempering.html#sec-tempering" class="quarto-xref"><span>Section 11.1</span></a> and confirm in <a href="13-pisa-results.html#sec-pisa-results" class="quarto-xref"><span>Section 13.1</span></a>, not assert.</p>
+</section>
+<section id="island-modes-the-geometry-you-anticipated" class="level2" data-number="7.4">
+<h2 data-number="7.4" class="anchored" data-anchor-id="island-modes-the-geometry-you-anticipated"><span class="header-section-number">7.4</span> Island modes: the geometry you anticipated</h2>
+<p>Why can the bridge be a poor IS proposal? Because <span class="math inline">\(q_{\text{SWL}}\propto\prod_m(L_m^0)^{1/M}\)</span> is a <em>geometric mean</em>: it places mass where all <span class="math inline">\(M\)</span> per-PV likelihoods are simultaneously large. When the per-PV posteriors overlap (small <span class="math inline">\(n\)</span>, weak identification), the bridge sits near every mode and the ratio <span class="math inline">\(L_m^0/q_{\text{SWL}}\)</span> has a bounded tail. But the modes need not coincide — each <span class="math inline">\(y^{(m)}\)</span> is a distinct IRT draw, so the <span class="math inline">\(M\)</span> modes scatter in <span class="math inline">\(\beta_{\text{FE}}\)</span> space. As <span class="math inline">\(n\)</span> grows, each per-PV posterior <em>sharpens</em> and the modes separate into an archipelago; the geometric-mean bridge settles in the valley between islands, draws land in low-likelihood regions for each individual PV, and the few that do reach PV <span class="math inline">\(m\)</span>’s mode get inflated weight — driving <span class="math inline">\(\hat k_m\)</span> up. The unwelcome irony you spotted: the large-<span class="math inline">\(n\)</span>, well-identified regime where you most want Pipeline B is exactly where the <span class="math inline">\(1/M\)</span> proposal is most strained. High-ICC settings (Korea’s <em>mathematics</em> ICC <span class="math inline">\(\approx 0.45\)</span>) may widen the cross-PV spread more than low-ICC ones (USA <span class="math inline">\(\approx 0.20\)</span>; the reading data analyzed here is milder, near <span class="math inline">\(0.2\)</span> for both countries), so this is worth watching empirically.</p>
+</section>
+<section id="your-tempering-idea-formalized" class="level2" data-number="7.5">
+<h2 data-number="7.5" class="anchored" data-anchor-id="your-tempering-idea-formalized"><span class="header-section-number">7.5</span> Your tempering idea, formalized</h2>
+<p>The fix you sketched is to replace the exponent <span class="math inline">\(1/M\)</span> with <span class="math inline">\(1/(kM)\)</span>, <span class="math inline">\(k&gt;1\)</span>: <span class="math display">\[
+q^{(k)}(\psi)\propto p(\psi)\prod_{m=1}^M L_m^0(\psi)^{1/(kM)}.
+\]</span> A larger <span class="math inline">\(k\)</span> raises the temperature: the proposal broadens and covers separated modes better, lowering <span class="math inline">\(\hat k\)</span>. The implementation is a small change to the fractional-weight rule inside <code>stack_fractional_posterior()</code>, where the per-row weight is currently hard-coded to <code>1/M</code> (<code>w_frac &lt;- 1/M</code>); setting it to <code>1/(k*M)</code> gives your <span class="math inline">\(1/2M, 1/3M\)</span>. It is not yet a user-facing argument, and because the fractional weight is woven into the provenance hash, the tempered bridge is run as a deliberate sensitivity branch, not a casual toggle (<a href="08-operators-in-code.html#sec-operators" class="quarto-xref"><span>Section 8.1</span></a>).</p>
+<p>You also flagged the risk — “too much tempering could skew the point estimates” — and the answer has two parts. <strong>Under the flat-prior regime of Theorem 2.2 (assumption R0), the mode is exponent-invariant:</strong> the proof (<a href="03-licensing-identity.html#sec-identity" class="quarto-xref"><span>Section 3.1</span></a>) uses only that the GLS gradient is linear in <span class="math inline">\(y^{(m)}\)</span>, and a scalar <span class="math inline">\(1/(kM)\)</span> in front of the log-likelihood leaves the normal equation unchanged, so the stacked mode of <span class="math inline">\(q^{(k)}\)</span> is <span class="math inline">\(\bar\beta_{\text{Rubin}}\)</span> for every <span class="math inline">\(k\)</span>. With a <em>proper</em> prior — the <code>brms</code> default — this is no longer exact: tempering rescales the likelihood relative to the <em>fixed</em> prior precision, so the MAP drifts toward the prior mean as <span class="math inline">\(k\)</span> grows. The drift is small when the prior is diffuse, but not zero, and the codebase’s own exactness harness is built to measure it. So your worry is real but bounded, with two mitigations: keep the prior weak, and — your own instinct — <strong>run <span class="math inline">\(1/M\)</span> first.</strong> Even setting the prior aside, a flatter bridge gives more dispersed draws, so the PSIS-reweighted mean <span class="math inline">\(\hat\beta_m^{\text{PSIS}}\)</span> (a draw-average, not the mode) carries more Monte-Carlo noise — at the <span class="math inline">\(O_p(S^{-1/2})\)</span> rate when <span class="math inline">\(\hat k_m&lt;0.5\)</span>, and more slowly as <span class="math inline">\(\hat k_m\)</span> rises toward the gate. <span class="math inline">\(1/M\)</span> is the most concentrated proposal consistent with the mode guarantee; <span class="math inline">\(\hat k\)</span> tells you at once whether a flatter one is needed. The <span class="math inline">\(k\in\{2,3\}\)</span> range is exploratory; we report the <span class="math inline">\(\hat k\)</span>-versus-dispersion tradeoff on known-truth data in <a href="11-pipeline-b-tempering.html#sec-tempering" class="quarto-xref"><span>Section 11.1</span></a>.</p>
+</section>
+<section id="your-two-mcmc-option" class="level2" data-number="7.6">
+<h2 data-number="7.6" class="anchored" data-anchor-id="your-two-mcmc-option"><span class="header-section-number">7.6</span> Your two-MCMC option</h2>
+<p>Your “further fit a second time” is a real, targeted strategy. Run the <span class="math inline">\(1/M\)</span> fit as usual and take point estimates from it; if some <span class="math inline">\(\hat k_m\)</span> fail the gate, run a <em>second</em>, more diffuse fit at <span class="math inline">\(1/(kM)\)</span> purely as the IS proposal, and recompute those PVs’ weights against it. The cost is one extra MCMC (≈10–26 min per country at PISA scale, <a href="13-pisa-results.html#sec-pisa-results" class="quarto-xref"><span>Section 13.1</span></a>), spent only where the gate flags trouble — a rescue that avoids falling all the way back to ten per-PV Pipeline A fits. The first run preserves efficient estimates; the second services the tails. It is implemented through the same <code>w_frac</code> knob, with no change to the PSIS or CCC logic downstream, and is evaluated in <a href="11-pipeline-b-tempering.html#sec-tempering" class="quarto-xref"><span>Section 11.1</span></a>. Like the tempering levels, it is exploratory, not yet a validated default.</p>
+</section>
+<section id="pipeline-b-and-c-direct-complementary-not-rivals" class="level2" data-number="7.7">
+<h2 data-number="7.7" class="anchored" data-anchor-id="pipeline-b-and-c-direct-complementary-not-rivals"><span class="header-section-number">7.7</span> Pipeline B and C-Direct: complementary, not rivals</h2>
+<p>C-Direct is the robust default for the PISA reporting: one deterministic CCC pass anchored by Theorem 2.2, no PSIS, no <span class="math inline">\(\hat k\)</span> risk. Pipeline B adds a <em>diagnostic layer</em> C-Direct cannot: per-PV <span class="math inline">\(\hat\beta_m^{\text{PSIS}}\)</span> and per-PV <span class="math inline">\(\hat k_m\)</span> give a direct view of whether the single stacked posterior is spreading its mass correctly across the <span class="math inline">\(M\)</span> per-PV posteriors. All <span class="math inline">\(\hat k_m&lt;0.5\)</span> is confirmatory that the bridge’s tails are well-behaved and that B’s <em>point</em> covers the modes. It does not, by itself, certify B’s <em>variance</em>: because B’s <span class="math inline">\(M\)</span> per-PV estimates reweight one shared draw cloud, the pooled between-imputation term <span class="math inline">\(B\)</span> can run below the independent-refit target even when every <span class="math inline">\(\hat k_m\)</span> is deep green — as it does on the real PISA data (<a href="13-pisa-results.html#sec-pisa-results" class="quarto-xref"><span>Section 13.1</span></a>). A drift into Yellow sharpens the warning, but the gap is structural, not gated by it. The workflow follows: run C-Direct as default, run B alongside to verify <span class="math inline">\(\hat k\)</span> and the per-PV <em>point</em> estimates, and treat B’s intervals as a cross-check, not the deliverable. Where B’s gate fails, C-Direct stands alone.</p>
+</section>
+<section id="honest-scope-and-attribution" class="level2" data-number="7.8">
+<h2 data-number="7.8" class="anchored" data-anchor-id="honest-scope-and-attribution"><span class="header-section-number">7.8</span> Honest scope and attribution</h2>
+<p>Three commitments. First, tempering at <span class="math inline">\(1/2M\)</span>, <span class="math inline">\(1/3M\)</span> and the two-MCMC variant are <strong>exploratory</strong> — your ideas, implemented as sensitivity knobs, not yet validated at PISA scale; <a href="11-pipeline-b-tempering.html#sec-tempering" class="quarto-xref"><span>Section 11.1</span></a> reports the evidence. Second, “PISA <span class="math inline">\(\hat k&lt;0.7\)</span>” is an expectation we test, not a finding asserted here. Third, on credit: the PSIS step is shared with <span class="citation" data-cites="jedhoff_efficient_2026">Jedhoff et al. (<a href="#ref-jedhoff_efficient_2026" role="doc-biblioref">2025</a>)</span> (who paired it with IWMM in a generic two-step setting); what is distinct in Pipeline B is the coupling of PSIS with the Williams–Savitsky CCC calibration against an external BRR-Fay target, the two-level PV likelihood ratio, and the survey-design integration — the CCC calibration, not IWMM, is the load-bearing divergence.</p>
+<p>Forward: <a href="11-pipeline-b-tempering.html#sec-tempering" class="quarto-xref"><span>Section 11.1</span></a> for the simulation evidence on <span class="math inline">\(\hat k\)</span> under <span class="math inline">\(1/M\)</span> vs <span class="math inline">\(1/2M\)</span> vs <span class="math inline">\(1/3M\)</span>, and <a href="08-operators-in-code.html#sec-operators" class="quarto-xref"><span>Section 8.1</span></a> for the three-pipeline comparison and the code.</p>
+
+
+<div id="refs" class="references csl-bib-body hanging-indent" role="list">
+<div id="ref-jedhoff_efficient_2026" class="csl-entry" role="listitem">
+Jedhoff, Svenja, Hadi Kutabi, Anne Meyer, and Paul-Christian Bürkner. 2025. <em>Efficient Uncertainty Propagation in <span>Bayesian</span> Two-Step Procedures</em>. arXiv preprint arXiv:2505.10510. <a href="https://doi.org/10.48550/arXiv.2505.10510">https://doi.org/10.48550/arXiv.2505.10510</a>.
+</div>
+<div id="ref-vehtari_pareto_2024" class="csl-entry" role="listitem">
+Vehtari, Aki, Daniel Simpson, Andrew Gelman, Yuling Yao, and Jonah Gabry. 2024. <span>“Pareto Smoothed Importance Sampling.”</span> <em>Journal of Machine Learning Research</em> 25 (72): 1–58. <a href="https://jmlr.org/papers/v25/19-556.html">https://jmlr.org/papers/v25/19-556.html</a>.
+</div>
+</div>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/joonho112\.github\.io\/one-mcmc-pv-memo\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./06-ccc-beta-only.html" class="pagination-link" aria-label="The Cholesky Calibration Correction, and Why Only the Betas">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">The Cholesky Calibration Correction, and Why Only the Betas</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./08-operators-in-code.html" class="pagination-link" aria-label="The Operators in Code">
+        <span class="nav-page-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">The Operators in Code</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/joonho112/one-mcmc-pv-memo/blob/main/07-pipeline-b-importance-sampling.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/joonho112/one-mcmc-pv-memo/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>

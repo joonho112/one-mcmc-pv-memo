@@ -1,0 +1,40 @@
+/* Making Pipelines B and C Legible — book styles */
+
+h1, h2, h3 { letter-spacing: -0.01em; }
+
+/* A blockquote style for Matt's verbatim comments */
+.matt {
+  border-left: 4px solid #8e44ad;
+  background: #faf6fd;
+  padding: 0.6rem 1rem;
+  margin: 1rem 0;
+  border-radius: 4px;
+  color: #333;
+}
+.matt::before {
+  content: "From your comments";
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8e44ad;
+  margin-bottom: 0.3rem;
+  font-weight: 600;
+}
+
+/* Tighten tables a little for the comparison grids */
+table { font-size: 0.95em; }
+
+/* Key-takeaway emphasis box uses Quarto callout-tip; nothing extra needed */
+
+/* Cross-reference pill for "answers comment Cx" */
+.answers {
+  display: inline-block;
+  font-size: 0.78rem;
+  background: #eef7ee;
+  border: 1px solid #cfe6cf;
+  color: #2e7d32;
+  border-radius: 10px;
+  padding: 0.05rem 0.5rem;
+  margin-left: 0.3rem;
+}

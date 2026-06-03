@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.37">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>5&nbsp; Where the External Variance Comes From: BRR-Fay Assembly – Making Pipelines B and C Legible</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./06-ccc-beta-only.html" rel="next">
+<link href="./04-pv-to-parameter-variance.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-9ece03dab9959ef5c886c0d317450186.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="nav-sidebar floating quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./03-licensing-identity.html">II · Mathematical Theory</a></li><li class="breadcrumb-item"><a href="./05-where-tmi-comes-from.html"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Where the External Variance Comes From: BRR-Fay Assembly</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Making Pipelines B and C Legible</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/joonho112/one-mcmc-pv-memo" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">I · Orientation</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01-three-pipelines-one-picture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Three Pipelines in One Picture</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02-questions-and-roadmap.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Your Questions, Restated — and a Roadmap</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">II · Mathematical Theory</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03-licensing-identity.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">The Licensing Identity: One Fit Gives the Pooled Point Estimate</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04-pv-to-parameter-variance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">From Plausible-Value Variance to Parameter Variance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05-where-tmi-comes-from.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Where the External Variance Comes From: BRR-Fay Assembly</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06-ccc-beta-only.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">The Cholesky Calibration Correction, and Why Only the Betas</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./07-pipeline-b-importance-sampling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Pipeline B: Importance Sampling, Tempering, and Diagnostics</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">III · Code</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./08-operators-in-code.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">The Operators in Code</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">IV · Simulated-Data Demonstration</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./09-controlled-experiment.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">A Controlled Experiment with Known Truth</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./10-recovery-results.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Recovery Results: Does Pipeline C Find the Truth?</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./11-pipeline-b-tempering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Pipeline B in Practice: a Tempering Experiment</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">V · PISA 2022 Application</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./12-pisa-data-model.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">PISA 2022: Data and Model Setup</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./13-pisa-results.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">PISA 2022: Three Pipelines, Side by Side</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">VI · Synthesis</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./14-response-to-matt.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Response to Your Comments</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-tmi" id="toc-sec-tmi" class="nav-link active" data-scroll-target="#sec-tmi"><span class="header-section-number">5.1</span> Your question, squarely answered</a></li>
+  <li><a href="#the-per-pv-brr-fay-sandwich" id="toc-the-per-pv-brr-fay-sandwich" class="nav-link" data-scroll-target="#the-per-pv-brr-fay-sandwich"><span class="header-section-number">5.2</span> The per-PV BRR-Fay sandwich</a></li>
+  <li><a href="#the-810-fit-count-and-why-the-fits-are-cheap" id="toc-the-810-fit-count-and-why-the-fits-are-cheap" class="nav-link" data-scroll-target="#the-810-fit-count-and-why-the-fits-are-cheap"><span class="header-section-number">5.3</span> The 810-fit count, and why the fits are cheap</a></li>
+  <li><a href="#the-brrfay-2l-algorithm" id="toc-the-brrfay-2l-algorithm" class="nav-link" data-scroll-target="#the-brrfay-2l-algorithm"><span class="header-section-number">5.4</span> The BRRFay-2L algorithm</a></li>
+  <li><a href="#brrfay-2l-is-shared-by-all-three-pipelines" id="toc-brrfay-2l-is-shared-by-all-three-pipelines" class="nav-link" data-scroll-target="#brrfay-2l-is-shared-by-all-three-pipelines"><span class="header-section-number">5.5</span> BRRFay-2L is shared by all three pipelines</a></li>
+  <li><a href="#why-the-single-mcmcs-own-covariance-cannot-substitute" id="toc-why-the-single-mcmcs-own-covariance-cannot-substitute" class="nav-link" data-scroll-target="#why-the-single-mcmcs-own-covariance-cannot-substitute"><span class="header-section-number">5.6</span> Why the single MCMC’s own covariance cannot substitute</a></li>
+  <li><a href="#the-honest-one-liner-and-what-comes-next" id="toc-the-honest-one-liner-and-what-comes-next" class="nav-link" data-scroll-target="#the-honest-one-liner-and-what-comes-next"><span class="header-section-number">5.7</span> The honest one-liner, and what comes next</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/joonho112/one-mcmc-pv-memo/blob/main/05-where-tmi-comes-from.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/joonho112/one-mcmc-pv-memo/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./03-licensing-identity.html">II · Mathematical Theory</a></li><li class="breadcrumb-item"><a href="./05-where-tmi-comes-from.html"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Where the External Variance Comes From: BRR-Fay Assembly</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Where the External Variance Comes From: BRR-Fay Assembly</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="sec-tmi" class="level2" data-number="5.1">
+<h2 data-number="5.1" class="anchored" data-anchor-id="sec-tmi"><span class="header-section-number">5.1</span> Your question, squarely answered</h2>
+<p>This is the chapter you asked for most directly. Two of your comments land on the same object:</p>
+<div class="matt">
+<p><strong>C4</strong> (on the external <span class="math inline">\(T_{\text{MI}}\)</span>): I don’t understand where this comes from? isn’t it model specific and needs to be computed by estimating multiple models?</p>
+<p><strong>C2</strong> (on <span class="math inline">\(T_{\text{MI}}\)</span> generally): How do we get this without using A or B methods?</p>
+</div>
+<p>Both instincts are exactly right, and I want to say so plainly: <span class="math inline">\(T_{\text{MI}}\)</span> <strong>is</strong> model-specific, and it <strong>does</strong> require fitting many models. The only correction is <em>which</em> fits. They are <span class="math inline">\(M(R{+}1) = 810\)</span> <strong>fast frequentist <code>lme4</code> REML fits</strong> — not MCMC chains — assembled by a self-contained subroutine, <strong>BRRFay-2L</strong>, that uses only <code>lme4</code> and the published replicate weights and never calls any pipeline’s sampler. So “without A or B” does not mean the target is free or pipeline-specific; it means the variance machinery is <em>orthogonal</em> to the MCMC.</p>
+</section>
+<section id="the-per-pv-brr-fay-sandwich" class="level2" data-number="5.2">
+<h2 data-number="5.2" class="anchored" data-anchor-id="the-per-pv-brr-fay-sandwich"><span class="header-section-number">5.2</span> The per-PV BRR-Fay sandwich</h2>
+<p>PISA 2022 ships a final student weight <code>W_FSTUWT</code> and <span class="math inline">\(R = 80\)</span> replicate weights <code>W_FSTURWT1</code>…<code>W_FSTURWT80</code>, built by Fay’s balanced repeated replication with shrinkage <span class="math inline">\(k = 0.5\)</span>. The PISA Technical Report (Formula 10.9) anchors the design variance with the multiplier <span class="math display">\[
+a_d = \frac{1}{R(1-k)^2} = \frac{1}{80\times 0.25} = 0.05.
+\]</span> For each plausible value, let <span class="math inline">\(\hat\beta_m\)</span> be the full-weight fixed-effect estimate and <span class="math inline">\(\hat\beta_m^{(r)}\)</span> the estimate under replicate weight <span class="math inline">\(r\)</span>. Conceptually these are the GLS solves <span class="math inline">\(\hat\beta_m = (X^\top\Omega X)^{-1}X^\top\Omega y^{(m)}\)</span> and <span class="math inline">\(\hat\beta_m^{(r)} = (X^\top\Omega^{(r)}X)^{-1}X^\top\Omega^{(r)}y^{(m)}\)</span> (from <a href="04-pv-to-parameter-variance.html#sec-pv2par" class="quarto-xref"><span>Section 4.1</span></a>); in the <em>implementation</em> each is obtained by a survey-weighted two-level REML fit, <code>lme4::lmer(y ~ … + (1|school), weights = w_r)</code>, with the replicate weights scaled per Pfeffermann’s two-level convention. The <strong>per-PV BRR-Fay sandwich</strong> is the matrix form of the Fay variance, <span class="math display">\[
+\hat U_m^{\text{BRR-Fay}} = a_d\sum_{r=1}^R \bigl(\hat\beta_m^{(r)}-\hat\beta_m\bigr)\bigl(\hat\beta_m^{(r)}-\hat\beta_m\bigr)^\top \in \mathbb R^{p\times p},
+\]</span> and the Rubin assembly of <a href="04-pv-to-parameter-variance.html#sec-pv2par" class="quarto-xref"><span>Section 4.1</span></a> gives <span class="math inline">\(\bar U = M^{-1}\sum_m\hat U_m^{\text{BRR-Fay}}\)</span>, the between term <span class="math inline">\(B\)</span>, and <span class="math display">\[
+T_{\text{MI}} = \bar U + \Bigl(1+\tfrac1M\Bigr)B.
+\]</span> This is the whole of <span class="math inline">\(T_{\text{MI}}\)</span>: a <span class="math inline">\(p\times p\)</span> object in parameter space, model-specific (it encodes the two-level model), assembled from many model fits — exactly as you suspected.</p>
+</section>
+<section id="the-810-fit-count-and-why-the-fits-are-cheap" class="level2" data-number="5.3">
+<h2 data-number="5.3" class="anchored" data-anchor-id="the-810-fit-count-and-why-the-fits-are-cheap"><span class="header-section-number">5.3</span> The 810-fit count, and why the fits are cheap</h2>
+<p>Per PV: one full-weight fit plus <span class="math inline">\(R = 80\)</span> replicate fits <span class="math inline">\(= 81\)</span>. Over <span class="math inline">\(M = 10\)</span> PVs, <span class="math display">\[
+M(R+1) = 10 \times 81 = 810 \text{ mini-fits per country}.
+\]</span> That is the literal “multiple models” of your C4. The decisive fact is the cost of <em>each</em>. These are <code>lme4</code> REML fits — iterative, but fast: in the deployed code (<code>brr_fay_U_one_pv()</code>, <a href="08-operators-in-code.html#sec-operators" class="quarto-xref"><span>Section 8.1</span></a>) each replicate is a full survey-weighted <code>lmer(..., REML = TRUE)</code> that re-estimates its own variance components, which is the standard (and conservative) BRR practice. I benchmarked one such fit at PISA-USA scale — synthetic <span class="math inline">\(n = 4{,}620\)</span>, <span class="math inline">\(J = 154\)</span>, two slopes — and it returns in about <strong>0.012 s</strong> (<code>code/01_brrfay_timing.R</code>). At that rate the full 810-fit loop is on the order of <strong>ten seconds</strong> single-threaded; with a richer covariate set or default <code>lmer</code> controls, allow up to ~1–2 s per fit and the loop is still only <strong>15–30 minutes</strong>. Either way it is orders of magnitude below MCMC.</p>
+<p>The contrast is the point (the single-MCMC figures below are the times we <em>measured</em> on the real PISA data in <a href="13-pisa-results.html#sec-pisa-results" class="quarto-xref"><span>Section 13.1</span></a>; the Pipeline A total is ten times the measured single fit):</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 16%">
+<col style="width: 27%">
+<col style="width: 27%">
+<col style="width: 27%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th style="text-align: center;">Pipeline A</th>
+<th style="text-align: center;">BRR-Fay loop</th>
+<th style="text-align: center;">Pipeline C MCMC</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Fits per country</td>
+<td style="text-align: center;"><span class="math inline">\(M=10\)</span> MCMC</td>
+<td style="text-align: center;"><span class="math inline">\(810\)</span> <code>lme4</code> REML</td>
+<td style="text-align: center;"><span class="math inline">\(1\)</span> MCMC</td>
+</tr>
+<tr class="even">
+<td>Cost per fit</td>
+<td style="text-align: center;">$<span class="math inline">\(10–26 min | **\)</span>$0.01–2 s (measured/bounded)**</td>
+<td style="text-align: center;">$<span class="math inline">\(10–26 min |
+| **Total per country** | **\)</span><span class="math inline">\(2–4 h** | **seconds to ~30 min** | **\)</span>$10–26 min**</td>
+<td style="text-align: center;"></td>
+</tr>
+</tbody>
+</table>
+<p>(The single-MCMC range is the measured USA-to-Korea span, ~10 min and ~26 min respectively, <a href="13-pisa-results.html#sec-pisa-results" class="quarto-xref"><span>Section 13.1</span></a>.) Had one tried to compute BRR-Fay variance by <em>MCMC</em> refits, the cost would be <span class="math inline">\(810\times 10\text{–}26\)</span> min — weeks of wall-clock per country. That is why BRRFay-2L is committed to frequentist REML: not a corner cut, but the only feasible route, and a very cheap one. The PV loop parallelizes trivially over <span class="math inline">\(M\)</span> cores, so even the pessimistic bound drops to a few minutes.</p>
+<p><em>An optional speed-up, not the default.</em> If the variance components are <em>pinned</em> at a single pilot <span class="math inline">\(\hat V\)</span> (the R3a regime of <a href="03-licensing-identity.html#sec-identity" class="quarto-xref"><span>Section 3.1</span></a>), each replicate collapses to a genuine closed-form GLS solve — faster still, and exactly the setting in which Theorem 2.2 holds. The deployed code does <strong>not</strong> pin them; it re-fits fully per replicate. We flag the pinned variant only because it is the bridge between this chapter’s cost argument and Chapter 3’s exactness argument.</p>
+</section>
+<section id="the-brrfay-2l-algorithm" class="level2" data-number="5.4">
+<h2 data-number="5.4" class="anchored" data-anchor-id="the-brrfay-2l-algorithm"><span class="header-section-number">5.4</span> The BRRFay-2L algorithm</h2>
+<p>Deterministic throughout — an outer PV loop, an inner replicate loop, then a standard Rubin assembly. No sampler, no convergence audit beyond each REML fit’s own.</p>
+<pre><code>Algorithm BRRFay-2L
+Inputs:  long-form data (M PVs, R=80 replicate weights, design X);
+         a_d = 1/(R(1-k)^2) = 0.05
+  1.  for m = 1..M:
+        β̂_m ← weighted-REML fixef of y^(m) at full weight        # lme4::lmer
+        for r = 1..R:
+          β̂_m^(r) ← weighted-REML fixef of y^(m) at replicate weight W^(r)
+        Û_m ← a_d · Σ_r (β̂_m^(r) − β̂_m)(β̂_m^(r) − β̂_m)ᵀ
+  2.  β̄_Rubin ← M^{-1} Σ_m β̂_m
+  3.  Ū ← M^{-1} Σ_m Û_m
+  4.  B ← (M−1)^{-1} Σ_m (β̂_m − β̄_Rubin)(β̂_m − β̄_Rubin)ᵀ
+  5.  T_MI ← Ū + (1 + 1/M) B
+Output:  {β̂_m}, {Û_m}, β̄_Rubin, Ū, B, T_MI
+        (optional R3a speed-up: pin variance components at a pilot V̂ → closed-form GLS solves)</code></pre>
+</section>
+<section id="brrfay-2l-is-shared-by-all-three-pipelines" class="level2" data-number="5.5">
+<h2 data-number="5.5" class="anchored" data-anchor-id="brrfay-2l-is-shared-by-all-three-pipelines"><span class="header-section-number">5.5</span> BRRFay-2L is shared by all three pipelines</h2>
+<p>Here is the direct answer to C2’s “without A or B.” BRRFay-2L is not part of Pipeline A, B, or C-Direct — it is a <strong>pipeline-independent module</strong> that runs once and feeds all three:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Pipeline</th>
+<th>CCC center</th>
+<th>CCC target</th>
+<th>BRRFay-2L output used</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>A (orthodox)</td>
+<td><span class="math inline">\(\hat\beta_m\)</span> per PV</td>
+<td><span class="math inline">\(\hat U_m^{\text{BRR-Fay}}\)</span> per PV</td>
+<td>per-PV sandwiches (<span class="math inline">\(M\)</span> calls)</td>
+</tr>
+<tr class="even">
+<td>B (PSIS)</td>
+<td><span class="math inline">\(\hat\beta_m^{\text{PSIS}}\)</span> per PV</td>
+<td><span class="math inline">\(\hat U_m^{\text{BRR-Fay}}\)</span> per PV</td>
+<td>per-PV sandwiches (<span class="math inline">\(M\)</span> calls)</td>
+</tr>
+<tr class="odd">
+<td>C-Direct</td>
+<td><span class="math inline">\(\bar\beta_{\text{Rubin}}\)</span></td>
+<td><span class="math inline">\(T_{\text{MI}}\)</span> (pooled)</td>
+<td>pooled <span class="math inline">\(T_{\text{MI}}\)</span> directly</td>
+</tr>
+</tbody>
+</table>
+<p>Its inputs are only the replicate weights, the design, the PV vectors — its output is pure <code>lme4</code> plus matrix algebra, independent of whether inference uses Stan, <code>brms</code>, or no sampler at all. <strong>No pipeline avoids the 810 fits; none pays them twice.</strong> Pipeline C’s economy over Pipeline A is <em>not</em> a saving on the variance target — both assemble the identical <span class="math inline">\(T_{\text{MI}}\)</span> — but purely a saving on MCMC count, ten chains down to one. (One small asymmetry worth naming: Pipeline A uses its ten per-PV MCMC posterior means as CCC centers and the BRR-Fay sandwiches as targets. Pipeline C-Direct, by contrast, centers its single calibrated cloud at the external <span class="math inline">\(\bar\beta_{\text{Rubin}}\)</span> — the BRR-Fay GLS pooled estimate itself, passed in as a numeric vector, <em>not</em> the raw stacked posterior mean — so its reported point equals Pipeline A’s <strong>exactly</strong>, and the R3a→R3b gap of <a href="03-licensing-identity.html#sec-identity" class="quarto-xref"><span>Section 3.1</span></a> becomes a verification diagnostic that never enters the deliverable (<a href="10-recovery-results.html#sec-recovery" class="quarto-xref"><span>Section 10.1</span></a>, <a href="13-pisa-results.html#sec-pisa-results" class="quarto-xref"><span>Section 13.1</span></a>). The shared 810-fit cost is unaffected.) How each pipeline binds its target to the operator is <a href="06-ccc-beta-only.html#sec-ccc" class="quarto-xref"><span>Section 6.1</span></a>.</p>
+</section>
+<section id="why-the-single-mcmcs-own-covariance-cannot-substitute" class="level2" data-number="5.6">
+<h2 data-number="5.6" class="anchored" data-anchor-id="why-the-single-mcmcs-own-covariance-cannot-substitute"><span class="header-section-number">5.6</span> Why the single MCMC’s own covariance cannot substitute</h2>
+<p>A tempting shortcut: surely the one stacked MCMC already carries the variance, making the external loop redundant? It does not, and the reason is structural rather than numerical. Define the <strong>stacked-bridge replicate variance</strong> <span class="math display">\[
+V_{q,\text{rep}} = a_d\sum_{r=1}^R \bigl(\hat\beta^{q,(r)}-\hat\beta^q\bigr)\bigl(\hat\beta^{q,(r)}-\hat\beta^q\bigr)^\top,
+\]</span> where <span class="math inline">\(\hat\beta^{q,(r)}\)</span> is the stacked-bridge point estimate under replicate <span class="math inline">\(r\)</span>. Under R3a and Theorem 2.2 applied <em>per replicate</em> (<a href="03-licensing-identity.html#sec-identity" class="quarto-xref"><span>Section 3.1</span></a>), <span class="math inline">\(\hat\beta^{q,(r)} = (X^\top\Omega^{(r)}X)^{-1}X^\top\Omega^{(r)}\bar y\)</span> — a GLS solve on the PV-average <span class="math inline">\(\bar y\)</span>. The between-PV scatter is therefore collapsed into <span class="math inline">\(\bar y\)</span> <em>before</em> any replicate perturbation, and is <strong>lost</strong>: <span class="math display">\[
+V_{q,\text{rep}} \;\overset{\text{R3a}}{=}\; \bar U \;\preceq\; T_{\text{MI}} = \bar U + (1+\tfrac1M)B.
+\]</span> Read this in two registers. The Loewner inequality <span class="math inline">\(\preceq\)</span> is the <strong>R3a</strong> statement: at a common plug-in <span class="math inline">\(V\)</span>, <span class="math inline">\(V_{q,\text{rep}}\)</span> equals <span class="math inline">\(\bar U\)</span> exactly and <span class="math inline">\((1+1/M)B \succeq 0\)</span>. The <strong>regime-free</strong> fact — the one that holds under R3a <em>or</em> R3b — is structural rather than Loewner: because <span class="math inline">\(\bar y\)</span> collapses the between-PV scatter <em>before</em> any replicate perturbation, <span class="math inline">\(V_{q,\text{rep}}\)</span> <strong>misses the entire <span class="math inline">\((1+1/M)B\)</span> term</strong> outright. Under the deployed R3b sampler <span class="math inline">\(V_{q,\text{rep}} \approx \bar U\)</span> is an empirical expectation (consistent with how <a href="03-licensing-identity.html#sec-identity" class="quarto-xref"><span>Section 3.1</span></a> treats R3b), checked rather than assumed. So calibrating to <span class="math inline">\(V_{q,\text{rep}}\)</span> rather than <span class="math inline">\(T_{\text{MI}}\)</span> understates the SE by about <span class="math inline">\(\gamma/2\)</span> — a <em>first-order</em> approximation, tight for the small within-school <span class="math inline">\(\gamma\)</span> but running a little under the exact value for the larger between-school <span class="math inline">\(\gamma\)</span> (the <span class="math inline">\(7\%\)</span> quoted below is exact, against a <span class="math inline">\(\gamma/2\approx6.5\%\)</span> linear estimate) — and under-covers, with <span class="math inline">\(\gamma = (1+1/M)B/T_{\text{MI}}\)</span> the fraction of missing information. In the <a href="04-pv-to-parameter-variance.html#sec-pv2par" class="quarto-xref"><span>Section 4.1</span></a> micro-example, the within-school slope (<span class="math inline">\(\gamma\approx0.03\)</span>) loses about <span class="math inline">\(1.7\%\)</span> of SE — a nominal 95% interval still covers about 94% — while the between-school slope (<span class="math inline">\(\gamma\approx0.13\)</span>) loses about <span class="math inline">\(7\%\)</span>, dropping coverage to roughly 93%. Modest per coefficient, but systematic, one-directional, and worse for the contextual (<span class="math inline">\(\beta^B\)</span>) effects that are often the substantive target.</p>
+<p>Two diagnostic ratios audit any implementation: <span class="math display">\[
+\rho_1 = \frac{V_{q,\text{rep}}}{\bar U}\quad(\text{expected}\approx 1,\ \textbf{measured not assumed}),
+\qquad
+\rho_2 = \frac{T_{\text{MI}}}{\bar U} = 1+\gamma \quad(\text{the FMI the single fit cannot see}).
+\]</span> That <span class="math inline">\(\rho_2 &gt; 1\)</span> — and that it <em>cannot</em> be recovered from the stacked fit no matter how long the chain — is the numerical statement of why an <strong>external</strong> <span class="math inline">\(T_{\text{MI}}\)</span> is genuinely necessary. As a guardrail, <code>pipeline_c_direct.R</code> refuses any Pipeline C call whose <span class="math inline">\(\Sigma_{\text{target}}\)</span> is a self-target (equal to the raw posterior covariance) or an obvious mock matrix (<a href="08-operators-in-code.html#sec-operators" class="quarto-xref"><span>Section 8.1</span></a>) — a deliberate block against exactly the shortcut that would quietly under-cover.</p>
+</section>
+<section id="the-honest-one-liner-and-what-comes-next" class="level2" data-number="5.7">
+<h2 data-number="5.7" class="anchored" data-anchor-id="the-honest-one-liner-and-what-comes-next"><span class="header-section-number">5.7</span> The honest one-liner, and what comes next</h2>
+<p><span class="math inline">\(T_{\text{MI}}\)</span> is model-specific and takes 810 model fits — but cheap <code>lme4</code> REML fits, a shared subroutine of seconds to (pessimistically) a few minutes per country, independent of any pipeline’s MCMC. Pipeline C-Direct’s sole advantage over Pipeline A is the MCMC count, one versus ten; the variance target costs the same either way, and neither pipeline can read it off a single posterior.</p>
+<p>The next chapter (<a href="06-ccc-beta-only.html#sec-ccc" class="quarto-xref"><span>Section 6.1</span></a>) shows how <span class="math inline">\(\bar\beta_{\text{Rubin}}\)</span> and <span class="math inline">\(T_{\text{MI}}\)</span> are injected into the Cholesky Calibration Correction as center and target, and why the operator acts on <span class="math inline">\(\beta_{\text{FE}}\)</span> alone. The implementation is <code>assemble_pisa_brr_fay_target()</code> with its helper <code>brr_fay_U_one_pv()</code> (<a href="08-operators-in-code.html#sec-operators" class="quarto-xref"><span>Section 8.1</span></a>).</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/joonho112\.github\.io\/one-mcmc-pv-memo\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./04-pv-to-parameter-variance.html" class="pagination-link" aria-label="From Plausible-Value Variance to Parameter Variance">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">From Plausible-Value Variance to Parameter Variance</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./06-ccc-beta-only.html" class="pagination-link" aria-label="The Cholesky Calibration Correction, and Why Only the Betas">
+        <span class="nav-page-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">The Cholesky Calibration Correction, and Why Only the Betas</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/joonho112/one-mcmc-pv-memo/blob/main/05-where-tmi-comes-from.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/joonho112/one-mcmc-pv-memo/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>

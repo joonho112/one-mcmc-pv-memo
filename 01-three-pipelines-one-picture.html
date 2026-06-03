@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.37">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>1&nbsp; The Three Pipelines in One Picture – Making Pipelines B and C Legible</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./02-questions-and-roadmap.html" rel="next">
+<link href="./index.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-9ece03dab9959ef5c886c0d317450186.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="site_libs/quarto-diagram/mermaid.min.js"></script>
+<script src="site_libs/quarto-diagram/mermaid-init.js"></script>
+<link href="site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="nav-sidebar floating quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-three-pipelines-one-picture.html">I · Orientation</a></li><li class="breadcrumb-item"><a href="./01-three-pipelines-one-picture.html"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Three Pipelines in One Picture</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Making Pipelines B and C Legible</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/joonho112/one-mcmc-pv-memo" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">I · Orientation</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01-three-pipelines-one-picture.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Three Pipelines in One Picture</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02-questions-and-roadmap.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Your Questions, Restated — and a Roadmap</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">II · Mathematical Theory</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03-licensing-identity.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">The Licensing Identity: One Fit Gives the Pooled Point Estimate</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04-pv-to-parameter-variance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">From Plausible-Value Variance to Parameter Variance</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05-where-tmi-comes-from.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Where the External Variance Comes From: BRR-Fay Assembly</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06-ccc-beta-only.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">The Cholesky Calibration Correction, and Why Only the Betas</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./07-pipeline-b-importance-sampling.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Pipeline B: Importance Sampling, Tempering, and Diagnostics</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">III · Code</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./08-operators-in-code.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">The Operators in Code</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">IV · Simulated-Data Demonstration</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./09-controlled-experiment.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">A Controlled Experiment with Known Truth</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./10-recovery-results.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Recovery Results: Does Pipeline C Find the Truth?</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./11-pipeline-b-tempering.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Pipeline B in Practice: a Tempering Experiment</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">V · PISA 2022 Application</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./12-pisa-data-model.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">PISA 2022: Data and Model Setup</span></span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./13-pisa-results.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">PISA 2022: Three Pipelines, Side by Side</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">VI · Synthesis</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./14-response-to-matt.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Response to Your Comments</span></span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-shared-spine" id="toc-the-shared-spine" class="nav-link active" data-scroll-target="#the-shared-spine"><span class="header-section-number">1.1</span> The shared spine</a></li>
+  <li><a href="#the-two-axes-of-divergence" id="toc-the-two-axes-of-divergence" class="nav-link" data-scroll-target="#the-two-axes-of-divergence"><span class="header-section-number">1.2</span> The two axes of divergence</a></li>
+  <li><a href="#one-picture" id="toc-one-picture" class="nav-link" data-scroll-target="#one-picture"><span class="header-section-number">1.3</span> One picture</a></li>
+  <li><a href="#the-three-pipelines-at-a-glance" id="toc-the-three-pipelines-at-a-glance" class="nav-link" data-scroll-target="#the-three-pipelines-at-a-glance"><span class="header-section-number">1.4</span> The three pipelines at a glance</a></li>
+  <li><a href="#where-the-cost-actually-lives" id="toc-where-the-cost-actually-lives" class="nav-link" data-scroll-target="#where-the-cost-actually-lives"><span class="header-section-number">1.5</span> Where the cost actually lives</a></li>
+  <li><a href="#what-this-book-does" id="toc-what-this-book-does" class="nav-link" data-scroll-target="#what-this-book-does"><span class="header-section-number">1.6</span> What this book does</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/joonho112/one-mcmc-pv-memo/blob/main/01-three-pipelines-one-picture.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/joonho112/one-mcmc-pv-memo/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-three-pipelines-one-picture.html">I · Orientation</a></li><li class="breadcrumb-item"><a href="./01-three-pipelines-one-picture.html"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Three Pipelines in One Picture</span></a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Three Pipelines in One Picture</span></h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>PISA 2022 does not release a single achievement score per student. It releases <span class="math inline">\(M = 10\)</span> <strong>plausible values</strong> (PVs) — ten draws from each student’s posterior ability distribution, generated by the consortium’s IRT model before the data file ever reaches you — so that a downstream analyst can propagate measurement uncertainty into any statistic. For a survey-weighted two-level random-intercept regression (an Allison hybrid with within-school slopes <span class="math inline">\(\beta^W\)</span>, between-school slopes <span class="math inline">\(\beta^B\)</span>, school effects <span class="math inline">\(\zeta_j\)</span>, and PISA’s 80 BRR-Fay replicate weights), the orthodox recipe is exactly what you would expect: <strong>fit the model ten times, once per PV, then pool the ten coefficient vectors and their variances by Rubin’s (1987) rules.</strong> That is <strong>Pipeline A</strong> — correct, defensible, and the reference against which everything in this book is judged.</p>
+<p>The proposal is that you can obtain the <em>same</em> Rubin-style report — the same point estimate and the same total variance — from <strong>one</strong> MCMC run instead of ten. That is the claim of Pipelines B and C. Before any theorems, I want you to see why all three procedures are variations on a single skeleton, differing on only two axes.</p>
+<section id="the-shared-spine" class="level2" data-number="1.1">
+<h2 data-number="1.1" class="anchored" data-anchor-id="the-shared-spine"><span class="header-section-number">1.1</span> The shared spine</h2>
+<p>The three pipelines have far more in common than not. They share a point center, a variance target, and a reshaping operator.</p>
+<p><strong>A single point center.</strong> Every pipeline reports the Rubin-pooled fixed-effect estimate <span class="math display">\[
+\bar\beta_{\text{Rubin}} = \frac{1}{M}\sum_{m=1}^{M}\hat\beta_m,
+\qquad
+\hat\beta_m = (X^\top\Omega X)^{-1}X^\top\Omega\, y^{(m)},
+\]</span> where <span class="math inline">\(\hat\beta_m\)</span> is the per-PV GLS estimate and <span class="math inline">\(\Omega = V^{-1}\)</span> is the marginal precision at plug-in variance components.</p>
+<p><strong>A single variance target.</strong> Every pipeline reports the Rubin total variance <span class="math display">\[
+T_{\text{MI}} = \bar U + \Bigl(1 + \tfrac{1}{M}\Bigr) B,
+\]</span> where <span class="math inline">\(\bar U = M^{-1}\sum_m \hat U_m^{\text{BRR-Fay}}\)</span> is the average within-PV design variance (assembled from the <span class="math inline">\(R = 80\)</span> replicate weights with Fay shrinkage <span class="math inline">\(k = 0.5\)</span>) and <span class="math inline">\(B = (M-1)^{-1}\sum_m(\hat\beta_m - \bar\beta_{\text{Rubin}})(\hat\beta_m - \bar\beta_{\text{Rubin}})^\top\)</span> is the between-PV parameter scatter. Exactly how <span class="math inline">\(T_{\text{MI}}\)</span> is assembled — and why it is the crux of your question — is <a href="05-where-tmi-comes-from.html#sec-tmi" class="quarto-xref"><span>Section 5.1</span></a>.</p>
+<p><strong>A single reshaping operator.</strong> Raw MCMC draws have the right center but the wrong covariance: the sampler’s implied uncertainty, not PISA’s design-based uncertainty. The <strong>Cholesky Calibration Correction (CCC)</strong> maps a raw draw cloud to a prescribed mean <span class="math inline">\(c\)</span> and covariance <span class="math inline">\(\Sigma_{\text{target}}\)</span>: <span class="math display">\[
+\beta_s^{\text{cal}} = c + L_{\text{target}}\,L_{\text{raw}}^{-1}\bigl(\beta_s - \bar\beta^{\text{raw}}\bigr),
+\qquad A = L_{\text{target}}L_{\text{raw}}^{-1},
+\]</span> with <span class="math inline">\(L_{\text{raw}}, L_{\text{target}}\)</span> the lower-triangular Cholesky factors of the raw and target covariances. CCC is deterministic and closed-form — it adds no sampling noise — and it acts only on the fixed-effect block <span class="math inline">\(\beta_{\text{FE}} = (\beta^W,\beta^B)^\top\)</span>; variance components pass through untouched. The reason, which turns out to be the heart of your “why only the conditional version” question, is that GLS fixed-effect gradients are <em>linear</em> in <span class="math inline">\(y^{(m)}\)</span> while variance-component scores are not (<a href="06-ccc-beta-only.html#sec-ccc" class="quarto-xref"><span>Section 6.1</span></a>).</p>
+</section>
+<section id="the-two-axes-of-divergence" class="level2" data-number="1.2">
+<h2 data-number="1.2" class="anchored" data-anchor-id="the-two-axes-of-divergence"><span class="header-section-number">1.2</span> The two axes of divergence</h2>
+<p>Given that spine, the three pipelines differ on exactly two choices — and nothing else.</p>
+<p><strong>Axis 1 — where the raw draws come from.</strong> Pipeline A runs <span class="math inline">\(M = 10\)</span> independent MCMC chains, one per PV. Pipelines B and C share a <em>single</em> MCMC run from the stacked fractional bridge <span class="math display">\[
+\log q_{\text{SWL}}(\psi) = \log p(\psi) + \frac{1}{M}\sum_{m=1}^{M}\log L_m^0(\psi) + C,
+\]</span> a geometric-mean blend of the ten per-PV likelihoods. Theorem 2.2 (Chapter 3) shows that the mode of <span class="math inline">\(q_{\text{SWL}}\)</span> over <span class="math inline">\(\beta_{\text{FE}}\)</span> equals <span class="math inline">\(\bar\beta_{\text{Rubin}}\)</span> <em>exactly</em> — under the R3a plug-in regime, where a single pilot <span class="math inline">\(\hat V\)</span> is held fixed. The real joint MCMC operates under R3b (variance components sampled jointly), which opens a small gap we <strong>measure</strong> rather than assume away (Chapters 3 and 10).</p>
+<p><strong>Axis 2 — at what granularity CCC is applied.</strong> Pipelines A and B call CCC <span class="math inline">\(M\)</span> times, once per PV, each call targeting the per-PV BRR-Fay sandwich <span class="math inline">\(\hat U_m^{\text{BRR-Fay}}\)</span>; the pooled <span class="math inline">\(T_{\text{MI}}\)</span> then emerges <em>afterward</em> as the Rubin combination of those calibrated clouds. Pipeline C-Direct calls CCC exactly <strong>once</strong>, with center <span class="math inline">\(\bar\beta_{\text{Rubin}}\)</span> and target <span class="math inline">\(T_{\text{MI}}\)</span> supplied directly. The one-shot shortcut is licensed by Theorem 2.2: because the stacked bridge already centers its draws at <span class="math inline">\(\bar\beta_{\text{Rubin}}\)</span>, a single CCC pass against <span class="math inline">\(T_{\text{MI}}\)</span> reproduces what the ten-call-then-pool procedure produces.</p>
+<p>One caution the picture makes visible: injecting <span class="math inline">\(T_{\text{MI}}\)</span> as a <em>per-PV</em> target in A or B would be wrong — it would over-disperse each individual cloud by the between-PV term <span class="math inline">\((1+1/M)B\)</span>. The pooled target is a valid <em>direct</em> CCC input only for C-Direct’s single cloud.</p>
+</section>
+<section id="one-picture" class="level2" data-number="1.3">
+<h2 data-number="1.3" class="anchored" data-anchor-id="one-picture"><span class="header-section-number">1.3</span> One picture</h2>
+<div class="cell" data-layout-align="center">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode default code-with-copy"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>flowchart TD</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    DATA["PISA data&lt;br/&gt;10 PVs, 80 replicate weights, design X"]</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    A1["Pipeline A&lt;br/&gt;10 per-PV MCMC runs"]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    BC1["Pipelines B and C&lt;br/&gt;1 stacked-bridge MCMC"]</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    BRR["SHARED BRR-Fay subroutine&lt;br/&gt;810 GLS / REML refits, not MCMC&lt;br/&gt;builds per-PV U_m, beta_Rubin, T_MI"]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    ACCC["A: CCC x M&lt;br/&gt;target = per-PV U_m"]</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    BCCC["B: CCC x M, PSIS-weighted&lt;br/&gt;target = per-PV U_m"]</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    CCCC["C-Direct: CCC x 1&lt;br/&gt;target = T_MI"]</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    OUT["SHARED report&lt;br/&gt;beta_Rubin and T_MI"]</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    DATA --&gt; A1</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    DATA --&gt; BC1</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    DATA --&gt; BRR</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    A1 --&gt; ACCC</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    BC1 --&gt; BCCC</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    BC1 --&gt; CCCC</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    BRR --&gt; ACCC</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    BRR --&gt; BCCC</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    BRR --&gt; CCCC</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    ACCC --&gt; OUT</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    BCCC --&gt; OUT</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    CCCC --&gt; OUT</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<p></p><figure class="figure"><p></p>
+<div>
+<pre class="mermaid mermaid-js">flowchart TD
+    DATA["PISA data&lt;br/&gt;10 PVs, 80 replicate weights, design X"]
+    A1["Pipeline A&lt;br/&gt;10 per-PV MCMC runs"]
+    BC1["Pipelines B and C&lt;br/&gt;1 stacked-bridge MCMC"]
+    BRR["SHARED BRR-Fay subroutine&lt;br/&gt;810 GLS / REML refits, not MCMC&lt;br/&gt;builds per-PV U_m, beta_Rubin, T_MI"]
+    ACCC["A: CCC x M&lt;br/&gt;target = per-PV U_m"]
+    BCCC["B: CCC x M, PSIS-weighted&lt;br/&gt;target = per-PV U_m"]
+    CCCC["C-Direct: CCC x 1&lt;br/&gt;target = T_MI"]
+    OUT["SHARED report&lt;br/&gt;beta_Rubin and T_MI"]
+    DATA --&gt; A1
+    DATA --&gt; BC1
+    DATA --&gt; BRR
+    A1 --&gt; ACCC
+    BC1 --&gt; BCCC
+    BC1 --&gt; CCCC
+    BRR --&gt; ACCC
+    BRR --&gt; BCCC
+    BRR --&gt; CCCC
+    ACCC --&gt; OUT
+    BCCC --&gt; OUT
+    CCCC --&gt; OUT
+</pre>
+</div>
+<p></p></figure><p></p>
+</div>
+</div>
+</div>
+<p>All three lanes feed the same CCC operator and emerge at the same <span class="math inline">\((\bar\beta_{\text{Rubin}},\,
+T_{\text{MI}})\)</span> output. The BRR-Fay subroutine sits in the middle, supplying target material to every lane regardless of which one you choose.</p>
+</section>
+<section id="the-three-pipelines-at-a-glance" class="level2" data-number="1.4">
+<h2 data-number="1.4" class="anchored" data-anchor-id="the-three-pipelines-at-a-glance"><span class="header-section-number">1.4</span> The three pipelines at a glance</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 16%">
+<col style="width: 27%">
+<col style="width: 27%">
+<col style="width: 27%">
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th style="text-align: center;">Pipeline A</th>
+<th style="text-align: center;">Pipeline B</th>
+<th style="text-align: center;">Pipeline C-Direct</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>MCMC runs</strong></td>
+<td style="text-align: center;">10 (one per PV)</td>
+<td style="text-align: center;">1 (stacked bridge)</td>
+<td style="text-align: center;">1 (stacked bridge)</td>
+</tr>
+<tr class="even">
+<td><strong>CCC calls</strong></td>
+<td style="text-align: center;"><span class="math inline">\(M = 10\)</span></td>
+<td style="text-align: center;"><span class="math inline">\(M = 10\)</span> (PSIS-weighted)</td>
+<td style="text-align: center;">1</td>
+</tr>
+<tr class="odd">
+<td><strong>CCC center</strong></td>
+<td style="text-align: center;"><span class="math inline">\(\hat\beta_m\)</span> per PV</td>
+<td style="text-align: center;"><span class="math inline">\(\hat\beta_m^{\text{PSIS}}\)</span> per PV</td>
+<td style="text-align: center;"><span class="math inline">\(\bar\beta_{\text{Rubin}}\)</span></td>
+</tr>
+<tr class="even">
+<td><strong>CCC target</strong></td>
+<td style="text-align: center;"><span class="math inline">\(\hat U_m^{\text{BRR-Fay}}\)</span> per PV</td>
+<td style="text-align: center;"><span class="math inline">\(\hat U_m^{\text{BRR-Fay}}\)</span> per PV</td>
+<td style="text-align: center;"><span class="math inline">\(T_{\text{MI}}\)</span></td>
+</tr>
+<tr class="odd">
+<td><strong>Point estimate</strong></td>
+<td style="text-align: center;">Rubin pool (post-CCC)</td>
+<td style="text-align: center;">Rubin pool (post-CCC)</td>
+<td style="text-align: center;"><span class="math inline">\(\bar\beta_{\text{Rubin}}\)</span> (Thm 2.2)</td>
+</tr>
+<tr class="even">
+<td><strong>PSIS needed?</strong></td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Yes (Pareto <span class="math inline">\(\hat k\)</span> gate)</td>
+<td style="text-align: center;">No</td>
+</tr>
+<tr class="odd">
+<td><strong>BRR-Fay cost</strong></td>
+<td style="text-align: center;">Shared</td>
+<td style="text-align: center;">Shared</td>
+<td style="text-align: center;">Shared</td>
+</tr>
+<tr class="even">
+<td><strong>MCMC wall-clock</strong></td>
+<td style="text-align: center;">$$2–4 h</td>
+<td style="text-align: center;">$$10–26 min</td>
+<td style="text-align: center;">$$10–26 min</td>
+</tr>
+</tbody>
+</table>
+<div class="callout callout-style-simple callout-note">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-body-container">
+<p>Theorem 2.2’s mode identity — the <em>raw</em> stacked posterior mean equalling <span class="math inline">\(\bar\beta_{\text{Rubin}}\)</span> — is exact only under the R3a plug-in regime (a single pilot <span class="math inline">\(\hat V\)</span> held fixed); the deployed R3b MCMC (variance components sampled jointly) opens a small gap between that raw mean and <span class="math inline">\(\bar\beta_{\text{Rubin}}\)</span>. That gap <strong>never enters C-Direct’s report</strong>, which is centered on the external <span class="math inline">\(\bar\beta_{\text{Rubin}}\)</span> — so its point estimate equals Pipeline A’s <em>exactly, by construction</em>. We <em>measure</em> the raw-mean gap only as a verification diagnostic — see Chapter 3 and the known-truth simulation in Part IV.</p>
+</div>
+</div>
+</div>
+<p>Two things the table hides. First, Pipeline B is <em>not</em> simply Pipeline A with a gate bolted on: it reweights the <strong>one</strong> shared draw cloud toward each per-PV posterior using PSIS importance weights, and only then calibrates. “PSIS needed” means each of the ten per-PV weight sets is checked by a Pareto <span class="math inline">\(\hat k\)</span> diagnostic; any <span class="math inline">\(\hat k \ge 0.7\)</span> triggers a fallback (to Pipeline A for that PV, or to C-Direct) — this is exactly the tail concern you raised, and <a href="07-pipeline-b-importance-sampling.html#sec-pipeb" class="quarto-xref"><span>Section 7.1</span></a> develops it. Second, and I want to be explicit: <strong>Pipeline C does not escape the BRR-Fay cost.</strong></p>
+</section>
+<section id="where-the-cost-actually-lives" class="level2" data-number="1.5">
+<h2 data-number="1.5" class="anchored" data-anchor-id="where-the-cost-actually-lives"><span class="header-section-number">1.5</span> Where the cost actually lives</h2>
+<p>If Pipeline C needs only one MCMC run, where did the work go? It went into the variance target — and that work is <strong>shared by all three pipelines</strong>. Assembling <span class="math inline">\(\hat U_m^{\text{BRR-Fay}}\)</span> and <span class="math inline">\(T_{\text{MI}}\)</span> requires <span class="math inline">\(M(R+1) = 10 \times 81 = 810\)</span> refits per country: one full-weight fit and <span class="math inline">\(R = 80\)</span> replicate-weight fits for each of the ten PVs. Crucially these are <strong>fast <code>lme4</code> REML fits</strong>, not MCMC — measured at roughly <span class="math inline">\(0.01\)</span>–<span class="math inline">\(0.05\)</span> s each at PISA scale (<a href="05-where-tmi-comes-from.html#sec-tmi" class="quarto-xref"><span>Section 5.1</span></a>), so seconds to a few minutes per country (a pessimistic upper bound of $$15–30 minutes with a rich covariate set), against the roughly two-to-four hours that ten full MCMC fits demand (USA to Korea, measured at PISA scale in <a href="13-pisa-results.html#sec-pisa-results" class="quarto-xref"><span>Section 13.1</span></a>).</p>
+<p>So Pipeline C does not make the variance target free, and it does not make it pipeline-specific: the 810 fits are <em>model-specific</em> and <em>unavoidable</em>, and every pipeline pays exactly the same price for them. What Pipeline C changes is one number only — the <strong>MCMC count, from ten to one.</strong> That is the whole of the efficiency claim, stated honestly. Your comment C4 asks where this target comes from and whether it secretly needs many model fits; the honest answer is “yes, many — but cheap ones, and shared,” and <a href="05-where-tmi-comes-from.html#sec-tmi" class="quarto-xref"><span>Section 5.1</span></a> makes it concrete.</p>
+</section>
+<section id="what-this-book-does" class="level2" data-number="1.6">
+<h2 data-number="1.6" class="anchored" data-anchor-id="what-this-book-does"><span class="header-section-number">1.6</span> What this book does</h2>
+<p>The remaining chapters develop this single picture from four angles:</p>
+<ol type="1">
+<li><strong>Mathematics</strong> — the stacked MLE identity (Theorem 2.2) that licenses the point estimate; the translation from plausible-value variance to <em>parameter</em> variance; the BRR-Fay assembly of <span class="math inline">\(T_{\text{MI}}\)</span>; and the CCC algebra, including why it touches only <span class="math inline">\(\beta_{\text{FE}}\)</span>.</li>
+<li><strong>Code</strong> — five R functions in one-to-one correspondence with the five objects in the diagram above (<code>stack_fractional_posterior</code>, <code>assemble_pisa_brr_fay_target</code>, <code>rubin_pool_matrix</code>, <code>ccc_twolevel</code>, and the pipeline runners).</li>
+<li><strong>A known-truth simulation</strong> — synthetic PVs with a <em>known</em> generating <span class="math inline">\(\beta\)</span>, where we can watch Pipeline C recover the truth and reproduce Pipeline A to within Monte-Carlo error.</li>
+<li><strong>PISA 2022</strong> — the three pipelines run side by side for the USA and Korea.</li>
+</ol>
+<p>The next chapter restates your five comments verbatim and points each one to the chapter that answers it (and <a href="14-response-to-matt.html#sec-response" class="quarto-xref"><span>Section 14.1</span></a> closes them out at the very end). If you want to go straight to “where does <span class="math inline">\(T_{\text{MI}}\)</span> come from without running A or B,” that is <a href="05-where-tmi-comes-from.html#sec-tmi" class="quarto-xref"><span>Section 5.1</span></a>; if you want the stacked MCMC and the importance-sampling step, that is <a href="07-pipeline-b-importance-sampling.html#sec-pipeb" class="quarto-xref"><span>Section 7.1</span></a>. This chapter’s only job was to put all three pipelines in one frame so the arguments that follow have somewhere to land.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/joonho112\.github\.io\/one-mcmc-pv-memo\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./index.html" class="pagination-link" aria-label="Preface">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Preface</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./02-questions-and-roadmap.html" class="pagination-link" aria-label="Your Questions, Restated — and a Roadmap">
+        <span class="nav-page-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Your Questions, Restated — and a Roadmap</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/joonho112/one-mcmc-pv-memo/blob/main/01-three-pipelines-one-picture.qmd" class="toc-action"><i class="bi bi-github"></i>View source</a></li><li><a href="https://github.com/joonho112/one-mcmc-pv-memo/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
