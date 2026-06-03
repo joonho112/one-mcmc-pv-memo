@@ -1,0 +1,68 @@
+---
+title: "PISA 2022: Data and Model Setup"
+---
+
+## From simulation to the real thing {#sec-pisa-setup}
+
+The simulation showed the three pipelines agree in point where we control the truth — with C-Direct
+reproducing the orthodox standard errors exactly. The remaining question is whether that holds on the
+actual PISA 2022 data, with its real plausible values, real survey weights, and real replicate-weight
+design. This chapter fixes the data and model; @sec-pisa-results reports the run.
+
+## The data
+
+We use PISA 2022 for the **United States** and **Korea**, drawn from the public-use files and prepared in
+`code/04_pisa_prep.R`. After listwise deletion on the analysis variables, the analytic samples are:
+
+| | $n$ (students) | $J$ (schools) | ICC (reading) |
+|---|:---:|:---:|:---:|
+| USA | 4,342 | 150 | 0.186 |
+| Korea | 6,391 | 186 | 0.220 |
+
+Each student carries the ten reading plausible values `PV1READ`–`PV10READ` ($M=10$), the final student
+weight `W_FSTUWT`, and the $R=80$ balanced-repeated-replication weights `W_FSTURWT1`–`W_FSTURWT80` (Fay
+$k=0.5$) that carry the design-based uncertainty.
+
+Two honest notes on scope. First, this demonstration uses **reading** achievement (the `EST-01`
+specification that was already prepared and validated in the project's data pipeline); re-extracting the
+mathematics plausible values from the raw files would not change anything about the *pipeline* comparison,
+which is the point here. Second — and relatedly — the reading ICCs are *similar* across the two countries
+(0.19 and 0.22), rather than the sharp 0.20-vs-0.45 contrast the proposal cited, which is a feature of
+*mathematics* (where Korea's between-school variance is much larger). The pipeline-agreement question does
+not depend on a large ICC contrast, so reading serves it well; the substantive cross-country story is a
+separate matter, addressed below.
+
+## The model and the estimand
+
+The analyst's model is the two-level random-intercept hybrid of @sec-identity, here with a single
+covariate — the economic, social and cultural status index (ESCS) — entered in within/between form:
+$$
+\text{READ}^{(m)}_{ij} = \beta_0 + \beta^W(\text{ESCS}_{ij}-\overline{\text{ESCS}}_{\cdot j})
+                        + \beta^B\,\overline{\text{ESCS}}_{\cdot j} + \zeta_j + \varepsilon^{(m)}_{ij}.
+$$
+The two estimands are the **within-school** SES gradient $\beta^W$ (how a student's relative advantage
+predicts their score) and the **between-school** gradient $\beta^B$ (how a school's average advantage
+predicts its scores) — the latter the larger, more policy-salient quantity, and the one with more
+missing-information sensitivity (@sec-pv2par).
+
+## What we run, and on which weights
+
+All three pipelines run on each country:
+
+- **Pipeline A** assembles the BRR-Fay target with the real `assemble_pisa_brr_fay_target` — $M(R{+}1)=810$
+  survey-weighted `lme4` fits per country — and Rubin-pools (the reference).
+- **Pipeline C-Direct** fits the stacked fractional bridge once in `brms` and calibrates with
+  `ccc_twolevel` against that $T_{\text{MI}}$.
+- **Pipeline B** reweights the same single fit per PV by PSIS and reports the Pareto $\hat k$.
+
+The student weight `W_FSTUWT` and the 80 replicate weights drive the design-based variance. A note on the
+weighting, because it matters for honesty: the *substantive* headline of the parent paper — that the
+USA–Korea between-school SES gap narrows and loses significance under the **exact two-stage** PISA weights
+(school weight times conditional student weight) — is a separate contribution, and we do not claim it here.
+This chapter's question is narrower and methodological: *do the three pipelines produce the same numbers on
+real data?* That comparison — whether A, B, and C-Direct agree — holds for *any* fixed weighting, since all
+three share it; the *estimates themselves* of course depend on the weights, which is exactly why the parent
+paper's exact-two-stage-weight story is a separate contribution. We use the standard final and replicate
+weights throughout and let that substantive weighting debate live in the paper proper.
+
+@sec-pisa-results has the answer.

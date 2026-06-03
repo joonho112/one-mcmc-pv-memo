@@ -1,0 +1,71 @@
+project:
+  type: book
+  output-dir: _book
+
+book:
+  title: "Making Pipelines B and C Legible"
+  subtitle: "Mathematics, Code, and Demonstrations — A Response to the Proposal Feedback"
+  author:
+    - name: "JoonHo Lee"
+      affiliations:
+        - name: "University of Alabama"
+  date: "2026-06-01"
+  search: true
+  page-navigation: true
+  reader-mode: true
+  # --- GitHub Pages (edit the repo name if you change it) ---
+  site-url: "https://joonho112.github.io/one-mcmc-pv-memo/"
+  repo-url: "https://github.com/joonho112/one-mcmc-pv-memo"
+  repo-actions: [source, issue]
+  chapters:
+    - index.qmd
+    - part: "I · Orientation"
+      chapters:
+        - 01-three-pipelines-one-picture.qmd
+        - 02-questions-and-roadmap.qmd
+    - part: "II · Mathematical Theory"
+      chapters:
+        - 03-licensing-identity.qmd
+        - 04-pv-to-parameter-variance.qmd
+        - 05-where-tmi-comes-from.qmd
+        - 06-ccc-beta-only.qmd
+        - 07-pipeline-b-importance-sampling.qmd
+    - part: "III · Code"
+      chapters:
+        - 08-operators-in-code.qmd
+    - part: "IV · Simulated-Data Demonstration"
+      chapters:
+        - 09-controlled-experiment.qmd
+        - 10-recovery-results.qmd
+        - 11-pipeline-b-tempering.qmd
+    - part: "V · PISA 2022 Application"
+      chapters:
+        - 12-pisa-data-model.qmd
+        - 13-pisa-results.qmd
+    - part: "VI · Synthesis"
+      chapters:
+        - 14-response-to-matt.qmd
+
+bibliography: references.bib
+
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    html-math-method: mathjax
+    fig-width: 8
+    fig-height: 5
+    fig-align: center
+    code-overflow: wrap
+    code-line-numbers: false
+    tbl-cap-location: top
+    fig-cap-location: bottom
+
+execute:
+  freeze: auto
+  echo: true
+  warning: false
+  message: false

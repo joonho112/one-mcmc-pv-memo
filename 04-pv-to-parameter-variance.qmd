@@ -1,0 +1,161 @@
+---
+title: "From Plausible-Value Variance to Parameter Variance"
+---
+
+## The missing arrow {#sec-pv2par}
+
+Your comment C3 sits right next to the term $(1+1/M)B$ in the Rubin total variance, and it asks the
+exactly right question: *isn't that $B$ a variance of the plausible values $y$, not of the model
+parameters $\beta$? How do the two connect?* Your email broadened it to both pieces — "my best guess
+is that $T_{\text{MI}}$ is coming from the plausible values $y$ for the between and within."
+
+The short answer: **no — both pieces live entirely in parameter space.** The longer answer, which is
+this chapter, is that your instinct is *half right* and worth taking seriously. The variability in
+$T_{\text{MI}}$ does *originate* in the $M$ different plausible-value vectors $y^{(1)},\dots,y^{(M)}$.
+But it is *measured* in the space of the regression coefficients $\hat\beta_m \in \mathbb R^{p}$ (with
+$p = \dim\beta_{\text{FE}} = 2K+1$, as in @sec-identity). The arrow from one space to the other is the GLS map, and drawing it
+explicitly is the whole job here.
+
+## The GLS map carries variance from $y$-space to $\beta$-space
+
+From @sec-identity, the per-PV GLS estimator at a fixed precision $\Omega = V^{-1}$ is
+$$
+\hat\beta_m = (X^\top\Omega X)^{-1}X^\top\Omega\,y^{(m)} =: F\,y^{(m)}, \qquad m = 1,\dots,M,
+$$
+where $F = (X^\top\Omega X)^{-1}X^\top\Omega$ is a fixed $p\times n$ matrix (the same $\Omega$ for every
+PV, under R3a). The single structural fact that matters is that **$F$ is linear**. Linearity has an
+immediate covariance consequence: if we ask how the scatter *across imputations* propagates from
+$y$-space into $\beta$-space, the sandwich identity gives the exact answer,
+$$
+\operatorname{Cov}_m\!\bigl[\hat\beta_m\bigr]
+= F\,\operatorname{Cov}_m\!\bigl[y^{(m)}\bigr]\,F^\top
+= (X^\top\Omega X)^{-1}X^\top\Omega
+  \underbrace{\operatorname{Cov}_m\!\bigl[y^{(m)}\bigr]}_{n\times n,\ \text{in } y\text{-space}}
+  \Omega X (X^\top\Omega X)^{-1}.
+$$
+This sandwich **is** the missing arrow. The plausible-value covariance — an $n\times n$ object in
+observation space, the IRT measurement uncertainty — is pressed between $F$ on the left and $F^\top$
+on the right and carried into a $p\times p$ object in parameter space. From this point on, everything
+Rubin's rules do is done in $\mathbb R^{p\times p}$. (Here $\operatorname{Cov}_m[\cdot]$ is the
+population imputation-posterior covariance; the $B$ defined below is its finite-sample plug-in from $M$
+*proper, exchangeable* draws — which is exactly why the $1/(M-1)$ and the $(1+1/M)$ correction appear.)
+
+## Both Rubin pieces are parameter-space matrices
+
+With the map in hand, the two combining-rule pieces are unambiguous $p\times p$ matrices.
+
+**Within-imputation variance $\bar U$.** For each PV, the BRR-Fay sandwich (PISA Technical Report
+Formula 10.9; $a_d = 1/[R(1-k)^2] = 0.05$ for $R=80,\,k=0.5$) is
+$$
+\hat U_m^{\text{BRR-Fay}} = a_d\sum_{r=1}^R \bigl(\hat\beta_m^{(r)}-\hat\beta_m\bigr)\bigl(\hat\beta_m^{(r)}-\hat\beta_m\bigr)^\top,
+\qquad \hat\beta_m^{(r)} = (X^\top\Omega^{(r)}X)^{-1}X^\top\Omega^{(r)}y^{(m)},
+$$
+already a $p\times p$ object built from deviations of *coefficient vectors*. Its PV-average is
+$\bar U = M^{-1}\sum_m \hat U_m^{\text{BRR-Fay}}$ — the design-based sampling uncertainty in
+$\hat\beta_m$ that would remain even if the latent scores were known perfectly.
+
+**Between-imputation variance $B$.** With $\bar\beta_{\text{Rubin}} = M^{-1}\sum_m\hat\beta_m$,
+$$
+B = \frac{1}{M-1}\sum_{m=1}^M \bigl(\hat\beta_m-\bar\beta_{\text{Rubin}}\bigr)\bigl(\hat\beta_m-\bar\beta_{\text{Rubin}}\bigr)^\top.
+$$
+Look at what enters this formula: only the $M$ coefficient vectors $\hat\beta_1,\dots,\hat\beta_M$. The
+outcome vectors $y^{(m)}$ do **not** appear. $B$ is the sample covariance of $M$ points in
+$\mathbb R^{p}$ — it measures how far the GLS solution moves as the IRT model draws a fresh realization
+of the latent outcome. **This is the direct answer to C3:** $(1+1/M)B$ is not the variance of the PVs;
+it is the (corrected) covariance of the $M$ GLS coefficient estimates, each the image of one PV vector
+under $F$.
+
+**Total variance and the $(1+1/M)$ correction.**
+$$
+T_{\text{MI}} = \bar U + \Bigl(1+\tfrac1M\Bigr)B.
+$$
+The factor decomposes as $(1+1/M)B = B + B/M$: the first term is the between-imputation variance
+(already unbiased, thanks to the $1/(M-1)$ in $B$); the extra $B/M$ is the simulation error in the
+finite-$M$ point estimate $\bar\beta_{\text{Rubin}}$, which averages only $M$ imputed estimates around
+the unobservable infinite-$M$ value [@rubin_multiple_1987]. It is *not* a bias in $B$. At $M=10$ the
+inflation is $1.1$ (and $1.2$ at the $M=5$ used below); as $M\to\infty$ it vanishes and
+$T_{\text{MI}}\to\bar U+B$. Every term is $p\times p$; the whole apparatus operates in parameter space
+from start to finish.
+
+## "Between and within" — the symmetry your email asked about
+
+Your email asked specifically whether the connection holds "for the between *and* within." It does, and
+the symmetry is worth stating because it is the cleanest way to see that nothing is left in $y$-space.
+Both $\bar U$ and $B$ are $\beta$-space covariances produced by the *same GLS machinery* — they differ
+in *what is perturbed*, and in whether the perturbation lands on the map or on its input:
+
+- $\bar U$ holds the PV draw fixed and perturbs the **sampling design** (the $R=80$ replicate
+  weights, which reweight $\Omega \to \Omega^{(r)}$); the resulting scatter of $\hat\beta_m^{(r)}$ is a
+  $\beta$-space covariance, then averaged over PVs. Here the perturbation falls on the *map itself*,
+  $F\to F^{(r)} = (X^\top\Omega^{(r)}X)^{-1}X^\top\Omega^{(r)}$.
+- $B$ holds the sampling design fixed and perturbs the **IRT draw** (a new $y^{(m)}$); the resulting
+  scatter of $\hat\beta_m$ is a $\beta$-space covariance. Here the map $F$ is held fixed and only its
+  *input* $y^{(m)}$ varies.
+
+Two different sources of uncertainty — replicate weights for $\bar U$, plausible-value draws for $B$ —
+both measured in $\hat\beta$-space by the same GLS machinery. There is no residual sense in which any
+component of $T_{\text{MI}}$ "is" a variance of $y$.
+
+## Fraction of missing information
+
+For a single coefficient, the fraction of missing information is
+$$
+\gamma_k = \frac{(1+1/M)\,B_{kk}}{T_{\text{MI},kk}},
+$$
+the share of total uncertainty in $\hat\beta_k$ owed to not observing the latent scores directly.
+*Illustrative* magnitudes (typical of PISA secondary analyses, not measured here): within-school
+slopes $\beta^W$ have low FMI, roughly $0.03$–$0.08$, because student-level measurement noise averages
+down over thousands of students; between-school slopes $\beta^B$ are higher, roughly $0.10$–$0.20$,
+because the contextual effect is identified from only $J\sim 150$–$500$ schools, so a fresh PV draw
+reshuffles school means more consequentially. The actual values are reported in the simulation
+diagnostics (Part IV) and the PISA runs (Part V).
+
+## Worked arithmetic (illustrative numbers throughout)
+
+To make the propagation concrete, take a synthetic setting — $J=10$ schools, $n=200$ students, $M=5$
+PVs, $\text{ICC}\approx0.30$ — and one coefficient, the within-school ESCS slope, in PISA-scale
+units$^2$. **These numbers are illustrative, drawn from a synthetic micro-example, not from a pipeline
+run.**
+
+| $m$ | $\hat\beta_m$ | $\hat U_m^{\text{BRR-Fay}}$ |
+|---|---|---|
+| 1 | 40.12 | 2.30 |
+| 2 | 39.88 | 2.18 |
+| 3 | 40.05 | 2.27 |
+| 4 | 40.31 | 2.21 |
+| 5 | 39.64 | 2.34 |
+
+From these, $\bar\beta_{\text{Rubin}} = 40.00$, $\bar U = 2.260$, and
+$$
+B = \tfrac14\sum_m(\hat\beta_m-40.00)^2 = \tfrac{0.2570}{4} = 0.0643,
+\qquad (1+\tfrac15)B = 1.2\times0.0643 = 0.0771,
+\qquad T_{\text{MI}} = 2.260+0.0771 = 2.3371.
+$$
+In standard-error terms, $\sqrt{\bar U} = 1.503$ versus $\sqrt{T_{\text{MI}}} = 1.529$ — the SE rises
+about $1.7\%$. Small, but always in the same direction: ignoring $B$ (using only $\bar U$, or the
+stacked-bridge replicate variance $V_{q,\text{rep}}\approx\bar U$ of @sec-tmi) makes the interval too
+narrow and **under-covers**, because it pretends a different IRT draw would have left $\hat\beta$
+exactly where it is.
+
+For a between-school coefficient $\beta^B$ in the same synthetic setting, the school-level design
+inflates $B$ more: illustratively $\bar U^{(B)} = 18.0$, $B^{(B)} = 2.25$, $(1+1/M)B^{(B)} = 2.70$,
+$T_{\text{MI}}^{(B)} = 20.7$, so $\sqrt{\bar U^{(B)}} = 4.243$ versus $\sqrt{T_{\text{MI}}^{(B)}} =
+4.550$ — about a $7\%$ gap, i.e. FMI $\approx 0.13$. A nominal 95% interval that drops $B$ here covers
+about $93\%$: coverage erodes more slowly than the SE near the center of a Gaussian, so a $7\%$ SE
+shortfall costs roughly two coverage points, not seven — but the loss is real and one-directional.
+
+## Forward links
+
+The between-imputation piece is now fully placed: $B$ is the sample covariance of the $M$ parameter
+vectors $\hat\beta_m$, tied to the plausible values through the linear GLS map. The next chapter
+(@sec-tmi) assembles the full $T_{\text{MI}}$ from the $R=80$ replicate weights — the $M(R{+}1)$
+fast `lme4` REML refits that build each $\hat U_m^{\text{BRR-Fay}}$, and the `rubin_pool_matrix()`
+routine that combines the pieces.
+
+And the payoff for Pipeline C is now visible. Because both $\bar U$ and $B$ are honest covariance
+matrices in parameter space — not residuals, not score dispersions, not approximations — their sum
+$T_{\text{MI}}$ is a well-defined, Cholesky-factorizable covariance target in the *same* space and
+units as the raw posterior covariance of the stacked MCMC draws. That dimensional match is exactly
+what lets the Cholesky Calibration Correction reshape the posterior to $T_{\text{MI}}$ in one shot
+(@sec-ccc). Had $T_{\text{MI}}$ really been a variance of $y$, the dimensions would not have matched and
+the calibration would be ill-defined. Tracing the GLS map from end to end is what guarantees they do.

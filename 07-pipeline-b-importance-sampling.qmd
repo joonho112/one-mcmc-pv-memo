@@ -1,0 +1,157 @@
+---
+title: "Pipeline B: Importance Sampling, Tempering, and Diagnostics"
+---
+
+## A collaborative starting point {#sec-pipeb}
+
+This chapter takes its brief from your comment beside the bridge formula:
+
+::: {.matt}
+**C1:** This seems like a good starting point, esp for the point estimates. For importance sampling we
+may want to further fit a second time and further temper to get better proposal values that are more
+likely to include the modes from the replicate distributions. Should double check the pareto version of
+importance sampling.
+:::
+
+and from your email:
+
+::: {.matt}
+…higher multiples of $M$ (say $1/2M$ or $1/3M$) to flatten out the proposal distribution … Each of the
+$M$ target distributions could be shifted away from the overall mode … the mode could be islands with
+less overlap … too much tempering could skew the point estimates, hence wanting to run it for the $1/M$
+first.
+:::
+
+These are not points to rebut — they are the design brief for Pipeline B as it stands. The Pareto check
+you asked for is built in; the tempering you sketched is a single code knob; the second-fit idea is a
+real option. The rest of the chapter explains why all three cohere.
+
+## The Pipeline B algorithm
+
+Pipeline B shares one stacked MCMC fit with Pipeline C-Direct, then treats the bridge as a *proposal*
+and each per-PV posterior as a *target*, recovering per-PV summaries by importance reweighting.
+
+1. **One stacked MCMC.** Fit $q_{\text{SWL}}(\psi)\propto p(\psi)\prod_m L_m^0(\psi)^{1/M}$ once, giving
+   draws $\{\beta_s\}_{s=1}^S$ of $\beta_{\text{FE}}$.
+2. **Per-PV importance weights.** For each PV,
+   $$
+   \log w_{m,s} = \log L_m^0(\beta_s) - \frac1M\sum_{m'=1}^M\log L_{m'}^0(\beta_s),
+   $$
+   the per-PV log-likelihood minus the log geometric-mean bridge density.
+3. **PSIS smoothing.** Pass `log_r = log_p − log_q` to `loo::psis()`; a generalized Pareto fit to the
+   upper tail returns smoothed weights $\tilde w_{m,s}$ and the shape diagnostic $\hat k_m$
+   [@vehtari_pareto_2024].
+4. **Per-PV center.** $\hat\beta_m^{\text{PSIS}} = \sum_s \tilde w_{m,s}\,\beta_s$ — an $O_p(S^{-1/2})$
+   estimator, *not* the exact identity of @sec-identity (that is why Pipeline B does not inherit Theorem
+   2.2).
+5. **Weighted CCC.** Calibrate each per-PV cloud to the survey-design target $\hat U_m^{\text{BRR-Fay}}$
+   with center $\hat\beta_m^{\text{PSIS}}$ and the PSIS weights, using the self-normalized weighted
+   covariance of the draws before the Cholesky map (@sec-ccc).
+6. **Rubin pool.** $\bar\beta_{\text{Rubin}} = M^{-1}\sum_m\hat\beta_m^{\text{PSIS}}$,
+   $T_{\text{MI}} = \bar U + (1+1/M)B$; all SEs and intervals come from $(\bar\beta_{\text{Rubin}},T_{\text{MI}})$.
+
+The runner is `pipeline_b_stacked_psis()`; the PSIS core is `pipeline_b_psis_density_pair()`
+(@sec-operators).
+
+## The Pareto $\hat k$ gate: "double check the pareto version," formalized
+
+Your instruction to "double check the pareto version" is exactly the $\hat k_m$ diagnostic. $\hat k_m$
+measures how heavy the upper tail of the weight distribution is — how much of the total weight a few
+draws carry. The standard tiers [@vehtari_pareto_2024] (sample-size-dependent rules of thumb, not sharp
+cutoffs):
+
+| $\hat k_m$ | Status | Action |
+|---|---|---|
+| $<0.5$ | Green — reliable | report Pipeline B |
+| $[0.5,0.7)$ | Yellow — caution | report B with per-PV $\hat k$ + mandatory C-Direct cross-check |
+| $\ge 0.7$ | Red — unreliable | fall back to Pipeline A for that PV, or to C-Direct entirely |
+
+In code, `khat <- max(loo::pareto_k_values(psis_obj))` per PV. The gate is the safety valve: where
+$\hat k<0.7$, B and C-Direct agree in *point* and B adds per-PV richness; where $\hat k\ge0.7$, C-Direct is
+valid because it never builds importance weights. One caveat the gate does *not* cover: a small $\hat k$
+certifies the importance sampling is stable, not that B's pooled *standard errors* match the orthodox
+target — on the real PISA data (@sec-pisa-results) B's intervals run narrow even at
+$\hat k\le0.07$, because B reweights one shared draw cloud. So "report Pipeline B" means its point and
+its $\hat k$; its intervals stay a cross-check against C-Direct. Whether PISA $\hat k$ stays $<0.7$ is an
+empirical question we **test** in @sec-tempering and confirm in @sec-pisa-results, not assert.
+
+## Island modes: the geometry you anticipated
+
+Why can the bridge be a poor IS proposal? Because $q_{\text{SWL}}\propto\prod_m(L_m^0)^{1/M}$ is a
+*geometric mean*: it places mass where all $M$ per-PV likelihoods are simultaneously large. When the
+per-PV posteriors overlap (small $n$, weak identification), the bridge sits near every mode and the
+ratio $L_m^0/q_{\text{SWL}}$ has a bounded tail. But the modes need not coincide — each $y^{(m)}$ is a
+distinct IRT draw, so the $M$ modes scatter in $\beta_{\text{FE}}$ space. As $n$ grows, each per-PV
+posterior *sharpens* and the modes separate into an archipelago; the geometric-mean bridge settles in
+the valley between islands, draws land in low-likelihood regions for each individual PV, and the few that
+do reach PV $m$'s mode get inflated weight — driving $\hat k_m$ up. The unwelcome irony you spotted: the
+large-$n$, well-identified regime where you most want Pipeline B is exactly where the $1/M$ proposal is
+most strained. High-ICC settings (Korea's *mathematics* ICC $\approx 0.45$) may widen the cross-PV
+spread more than low-ICC ones (USA $\approx 0.20$; the reading data analyzed here is milder, near $0.2$
+for both countries), so this is worth watching empirically.
+
+## Your tempering idea, formalized
+
+The fix you sketched is to replace the exponent $1/M$ with $1/(kM)$, $k>1$:
+$$
+q^{(k)}(\psi)\propto p(\psi)\prod_{m=1}^M L_m^0(\psi)^{1/(kM)}.
+$$
+A larger $k$ raises the temperature: the proposal broadens and covers separated modes better, lowering
+$\hat k$. The implementation is a small change to the fractional-weight rule inside
+`stack_fractional_posterior()`, where the per-row weight is currently hard-coded to `1/M`
+(`w_frac <- 1/M`); setting it to `1/(k*M)` gives your $1/2M, 1/3M$. It is not yet a user-facing argument,
+and because the fractional weight is woven into the provenance hash, the tempered bridge is run as a
+deliberate sensitivity branch, not a casual toggle (@sec-operators).
+
+You also flagged the risk — "too much tempering could skew the point estimates" — and the answer has two
+parts. **Under the flat-prior regime of Theorem 2.2 (assumption R0), the mode is exponent-invariant:** the
+proof (@sec-identity) uses only that the GLS gradient is linear in $y^{(m)}$, and a scalar $1/(kM)$ in
+front of the log-likelihood leaves the normal equation unchanged, so the stacked mode of $q^{(k)}$ is
+$\bar\beta_{\text{Rubin}}$ for every $k$. With a *proper* prior — the `brms` default — this is no longer
+exact: tempering rescales the likelihood relative to the *fixed* prior precision, so the MAP drifts
+toward the prior mean as $k$ grows. The drift is small when the prior is diffuse, but not zero, and the
+codebase's own exactness harness is built to measure it. So your worry is real but bounded, with two
+mitigations: keep the prior weak, and — your own instinct — **run $1/M$ first.** Even setting the prior
+aside, a flatter bridge gives more dispersed draws, so the PSIS-reweighted mean $\hat\beta_m^{\text{PSIS}}$
+(a draw-average, not the mode) carries more Monte-Carlo noise — at the $O_p(S^{-1/2})$ rate when
+$\hat k_m<0.5$, and more slowly as $\hat k_m$ rises toward the gate. $1/M$ is the most concentrated
+proposal consistent with the mode guarantee; $\hat k$ tells you at once whether a flatter one is needed. The $k\in\{2,3\}$ range is exploratory; we
+report the $\hat k$-versus-dispersion tradeoff on known-truth data in @sec-tempering.
+
+## Your two-MCMC option
+
+Your "further fit a second time" is a real, targeted strategy. Run the $1/M$ fit as usual and take point
+estimates from it; if some $\hat k_m$ fail the gate, run a *second*, more diffuse fit at $1/(kM)$ purely
+as the IS proposal, and recompute those PVs' weights against it. The cost is one extra MCMC (≈10–26 min
+per country at PISA scale, @sec-pisa-results), spent only where the gate flags trouble — a rescue that avoids falling all the
+way back to ten per-PV Pipeline A fits. The first run preserves efficient estimates; the second services
+the tails. It is implemented through the same `w_frac` knob, with no change to the PSIS or CCC logic
+downstream, and is evaluated in @sec-tempering. Like the tempering levels, it is exploratory, not yet a
+validated default.
+
+## Pipeline B and C-Direct: complementary, not rivals
+
+C-Direct is the robust default for the PISA reporting: one deterministic CCC pass anchored by Theorem
+2.2, no PSIS, no $\hat k$ risk. Pipeline B adds a *diagnostic layer* C-Direct cannot: per-PV
+$\hat\beta_m^{\text{PSIS}}$ and per-PV $\hat k_m$ give a direct view of whether the single stacked
+posterior is spreading its mass correctly across the $M$ per-PV posteriors. All $\hat k_m<0.5$ is
+confirmatory that the bridge's tails are well-behaved and that B's *point* covers the modes. It does not,
+by itself, certify B's *variance*: because B's $M$ per-PV estimates reweight one shared draw cloud, the
+pooled between-imputation term $B$ can run below the independent-refit target even when every $\hat k_m$ is
+deep green — as it does on the real PISA data (@sec-pisa-results). A drift into Yellow sharpens the warning,
+but the gap is structural, not gated by it. The workflow follows: run C-Direct as default, run B alongside
+to verify $\hat k$ and the per-PV *point* estimates, and treat B's intervals as a cross-check, not the
+deliverable. Where B's gate fails, C-Direct stands alone.
+
+## Honest scope and attribution
+
+Three commitments. First, tempering at $1/2M$, $1/3M$ and the two-MCMC variant are **exploratory** — your
+ideas, implemented as sensitivity knobs, not yet validated at PISA scale; @sec-tempering reports the
+evidence. Second, "PISA $\hat k<0.7$" is an expectation we test, not a finding asserted here. Third, on
+credit: the PSIS step is shared with @jedhoff_efficient_2026 (who paired it with IWMM in a generic
+two-step setting); what is distinct in Pipeline B is the coupling of PSIS with the Williams–Savitsky CCC
+calibration against an external BRR-Fay target, the two-level PV likelihood ratio, and the survey-design
+integration — the CCC calibration, not IWMM, is the load-bearing divergence.
+
+Forward: @sec-tempering for the simulation evidence on $\hat k$ under $1/M$ vs $1/2M$ vs $1/3M$, and
+@sec-operators for the three-pipeline comparison and the code.

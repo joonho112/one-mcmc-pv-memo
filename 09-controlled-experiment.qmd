@@ -1,0 +1,89 @@
+---
+title: "A Controlled Experiment with Known Truth"
+---
+
+## Why a known-truth check {#sec-controlled}
+
+The previous chapters argued, on paper, that one stacked MCMC reproduces the ten-fit Rubin report. The
+cleanest way to check an argument like that is to build data whose answer we already know and see whether
+the pipelines find it. This is a *smoke / pilot* experiment — deliberately small, fast, and transparent,
+not a production simulation study — but it is large enough to make the four claims of Part II checkable on
+real output rather than on algebra alone.
+
+This chapter fixes the design; the next reports what came out. The driver is `code/07_sim_realpipe.R`,
+which calls the **real** pipeline functions of @sec-operators end to end — `assemble_pisa_brr_fay_target`,
+`stack_fractional_posterior`, `pipeline_c_direct`, and `pipeline_b_stacked_psis`. It runs at two scales —
+a $J=60$ pilot (~48 s) and a PISA-scale $J=150$ run (~98 s) — caching to `code/cache/sim_realpipe_J60.rds`
+and `…_J150.rds`. (A companion closed-form script, `code/02_sim_demo.R`, supplies the 200-replication
+coverage study of @sec-recovery.)
+
+## The generating model
+
+We draw a two-level random-intercept world with a *known* fixed-effect vector. Students $i$ nest in
+schools $j$, and the latent outcome is
+$$
+\theta_{ij} = \beta^W x^{\text{w}}_{ij} + \beta^B \bar x_{\cdot j} + \zeta_j + \varepsilon_{ij},
+\qquad \zeta_j\sim N(0,\sigma^2_{\text{school}}),\ \varepsilon_{ij}\sim N(0,\sigma^2),
+$$
+with the within-school deviation $x^{\text{w}}_{ij} = x_{ij}-\bar x_{\cdot j}$ and the school mean
+$\bar x_{\cdot j}$ entering as separate predictors (the Allison hybrid of @sec-identity). The **ground
+truth** is
+$$
+\beta^W = 0.40, \qquad \beta^B = 0.60,
+$$
+with $\sigma^2_{\text{school}}$ and $\sigma^2$ set to give an intraclass correlation $\text{ICC}=0.25$ —
+squarely in the realistic PISA range (reading ICCs sit near $0.2$; mathematics reaches $\approx0.45$ in
+Korea). We run the design at **two scales, with fixed roles assigned in advance** — before we looked at any
+estimate. The $J=150$ **PISA-scale** run ($\bar n = 20$, $n=3000$) is where we read *recovery of the true
+coefficients*: $150$ is PISA's actual per-country PSU order of magnitude, fixed in advance (not a scale
+searched for a pass), and it is the regime in which the BRR-Fay design variance is well determined. The
+$J=60$ **pilot** ($\bar n = 25$, $n=1500$) is where we read *whether Pipeline B's importance sampler
+actually runs*: with few enough schools its stacked ratios stay well-behaved, so the bridge's accept path
+executes and we can watch it invoke the calibration engine. We do *not* read recovery off the pilot, and we
+say so up front, precisely so its noisier between-school slope $\beta^B$ cannot later be mistaken for a
+result we are explaining away. The pilot shows the bridge *working*; the PISA-scale run shows where it
+*breaks* (@sec-recovery).
+
+**Plausible values.** From the latent $\theta_{ij}$ we generate $M=10$ plausible values by adding
+independent measurement noise calibrated to a PV reliability $\rho=0.9$:
+$$
+y^{(m)}_{ij} = \theta_{ij} + \delta^{(m)}_{ij}, \qquad \delta^{(m)}_{ij}\sim N(0,\sigma^2_{\text{PV}}),
+$$
+so the ten PVs are ten noisy realizations of the same latent trait — exactly the structure PISA's IRT
+model produces, in miniature. This is the source of the between-imputation variation $B$ that
+@sec-pv2par traced into parameter space.
+
+## The estimands and the four checks
+
+The estimands are the two slopes $\beta^W$ and $\beta^B$. On this data we run, and check, the following —
+each one a claim from Part II made falsifiable:
+
+1. **Theorem 2.2, exactly (@sec-identity).** Compute the per-PV GLS estimates at a common plug-in
+   precision, their Rubin average $\bar\beta_{\text{Rubin}}$, and the stacked GLS solution on the
+   PV-average $\bar y$. The identity predicts these coincide to floating-point precision. We report the
+   residual $\|\hat\beta^q-\bar\beta_{\text{Rubin}}\|_\infty$.
+2. **The variance-component boundary.** As an honest falsification, we also compare the per-PV REML
+   estimate of $\sigma^2_{\text{school}}$, averaged, against the stacked-fit estimate. The theory predicts
+   these do *not* coincide (the identity is fixed-effects only). We report the drift.
+3. **The deployed sampler (R3b).** We fit the real stacked fractional bridge in `brms` (one MCMC) and
+   compare its posterior mean to $\bar\beta_{\text{Rubin}}$ — the R3a→R3b gap, measured rather than
+   assumed.
+4. **Pipeline A vs Pipeline C-Direct, Pipeline B's gate, and coverage.** We assemble the BRR-Fay target
+   $T_{\text{MI}}$ from $R=80$ replicate refits (`assemble_pisa_brr_fay_target`), run Pipeline A (per-PV
+   refit + Rubin pooling) and Pipeline C-Direct (`pipeline_c_direct`, calibrating one stacked `brms` fit's
+   draws to $T_{\text{MI}}$ **centered at the external $\bar\beta_{\text{Rubin}}$** — the @sec-ccc
+   construction), and check that their point estimates *and* standard errors agree. We also run Pipeline B
+   (`pipeline_b_stacked_psis`) and read off whether its Pareto-$\hat k$ gate accepts or fires. Finally we
+   repeat a fast closed-form pipeline over 200 fresh datasets to estimate confidence-interval coverage
+   against the known $\beta$ — a *model-based* check (design-based coverage under informative sampling is
+   taken up in @sec-design-coverage).
+
+Pipelines A, C-Direct, and B here are the **real** codebase functions of @sec-operators, called as a
+deployed analyst would call them — not re-implementations built to flatter the method. Two honest scope
+notes belong with that claim. First, the Theorem 2.2 residual (check 1) is computed by an *independent*
+closed-form GLS solver written for this chapter, not by the pipeline; if anything that is harder on the
+method, since it rebuilds the pooled target from scratch and asks the pipeline to match it. Second,
+`pipeline_b_stacked_psis` is wired to the single-predictor engine model $y\sim x+(1\mid\text{school})$, so
+Pipeline B is exercised on that model while A and C-Direct use the within–between (Mundlak) form
+$y\sim x^{\text{w}}+\bar x+(1\mid\text{school})$ — the B-vs-A comparison is therefore on the shared slope,
+not the full coefficient vector. The numbers are in @sec-recovery.

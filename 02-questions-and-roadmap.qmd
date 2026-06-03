@@ -1,0 +1,116 @@
+---
+title: "Your Questions, Restated — and a Roadmap"
+---
+
+You left five comments on the proposal and one summarizing paragraph in your email. They are the
+best possible table of contents for this book, because each one points at a place where the proposal
+was too terse. This chapter quotes them back to you verbatim, says what I now understand each to be
+asking, and names the chapter that answers it. Nothing here is an answer yet — it is a map.
+
+Your email put the central difficulty plainly:
+
+::: {.matt}
+The first two approaches seem solid. I'm not able to follow the third approach. I'm not following
+where the external total variance $T_{\text{MI}}$ is coming from. My best guess is that it is coming
+from the plausible values $y$ for the between and within. But I missed the connection to the variance
+of the regression parameters (Betas).
+:::
+
+That single paragraph actually contains two distinct questions — *where does $T_{\text{MI}}$ come
+from?* and *how does a variance over plausible values become a variance over $\beta$?* — and they are
+answered in two different chapters. Let me take all five margin comments in the order that builds.
+
+## The central one: where does the variance target come from? (C2, C4)
+
+::: {.matt}
+**C4.** I don't understand where this comes from? isn't it model specific and needs to be computed by
+estimating multiple models?
+
+**C2.** How do we get this without using A or B methods?
+:::
+
+This is the heart of the matter, and your instinct is correct: $T_{\text{MI}}$ **is** model-specific,
+and it **does** require fitting many models. The proposal hid that, which is what made Pipeline C look
+like it was conjuring a variance from nowhere. The clarification is about *which kind* of fit. The
+expensive object in this whole problem is the **MCMC**: Pipeline A runs ten of them, Pipeline C runs
+one. The variance target is a *separate* object, assembled from $M(R{+}1) = 810$ **fast `lme4` REML
+replicate refits** — seconds each, not hours — and that assembly is **identical and shared**
+across Pipelines A, B, and C. So $T_{\text{MI}}$ is not gotten "without A or B"; it is gotten by the
+same BRR-Fay machinery all three share, which is cheap and has nothing to do with how many MCMC runs
+you did. Pipeline C's only economy is the MCMC count. This is @sec-tmi, the chapter I most want you
+to read.
+
+## The connecting one: plausible-value variance vs. parameter variance (C3)
+
+::: {.matt}
+**C3.** Isn't this for the plausible values $y$ not the model parameters (betas?) How do we connect
+this to the variance of the parameters?
+:::
+
+Exactly the right question, and the proposal never drew the arrow. The between-imputation term
+$(1+1/M)B$ is **not** a variance of the plausible values $y$. Each plausible value $y^{(m)}$ is pushed
+through the regression to a coefficient vector $\hat\beta_m = (X^\top\Omega X)^{-1}X^\top\Omega\,
+y^{(m)}$, and $B$ is the scatter of those ten coefficient vectors in parameter space. The variability
+lives in $y$ but is *measured* in $\beta$, through the linear GLS map. @sec-pv2par draws that arrow
+carefully, with the worked arithmetic.
+
+## The subtle one: why calibrate only the betas? (C5)
+
+::: {.matt}
+**C5.** fixing the variance components? why not do importance resampling for the joint distribution
+instead of the conditional/profile version?
+:::
+
+Two good ideas are bundled here. First, *why is the calibration restricted to the fixed effects,
+holding the variance components fixed?* Because the licensing identity (Theorem 2.2) is exact only
+for $\beta_{\text{FE}}$: the GLS fixed-effect gradient is linear in $y^{(m)}$, while the
+variance-component scores are not, so the clean affine reshape has no analogue there — and the
+positivity constraint on $\sigma^2$ would be violated by an affine map anyway. Second, *why not
+importance-resample the joint distribution instead?* You can — and that is **exactly what Pipeline B
+does** for the fixed-effect block, via PSIS. So C5 is not really an objection to Pipeline C so much as
+a description of the B-vs-C trade-off. @sec-ccc handles the "why only betas" half; @sec-pipeb handles
+the "joint resampling" half. Calibrating the variance components themselves is a genuinely separate
+problem, and we defer it to the follow-up paper.
+
+## The generative one: making importance sampling work (C1)
+
+::: {.matt}
+**C1.** This seems like a good starting point, esp for the point estimates. For importance sampling we
+may want to further fit a second time and further temper to get better proposal values that are more
+likely to include the modes from the replicate distributions. Should double check the pareto version
+of importance sampling.
+:::
+
+And from your email:
+
+::: {.matt}
+I think we might need higher multiples of $M$ (say $1/2M$ or $1/3M$) to flatten out the proposal
+distribution for the importance sampling. Each of the $M$ target distributions could be shifted away
+from the overall mode. With larger sample sizes, the mode could be islands with less overlap … But
+too much tempering could skew the point estimates, hence wanting to run it for the $1/M$ first.
+:::
+
+This is not a question I need to defend against — it is a design idea I want to build with you. The
+stacked bridge is a good *point-estimate* proposal (Theorem 2.2 makes its mode exact), but it can be a
+poor *importance-sampling* proposal when the per-PV posteriors separate into the "islands" you
+describe. The Pareto $\hat k$ diagnostic is our primary instrument for detecting this, PV by PV —
+and, taking your "double check the pareto version" seriously, whether it is *sufficient* once the
+modes separate is something we **test** in @sec-tempering, not something we assume. Your tempering
+suggestion — raising the exponent to $1/(2M)$ or $1/(3M)$ to flatten the proposal — is a real fix,
+already reachable through one knob in the code. @sec-pipeb lays out the geometry, and @sec-tempering
+actually runs your $1/M$ vs $1/2M$ vs $1/3M$ experiment on data with a known answer, so we can see
+the trade-off you anticipated between proposal coverage and point-estimate stability.
+
+## The roadmap
+
+The Preface holds the same five comments as a one-screen table. In chapter terms:
+
+- **@sec-tmi** — where $T_{\text{MI}}$ comes from; the cheap-refit answer to **C2, C4**.
+- **@sec-pv2par** — plausible-value variance → parameter variance; **C3**.
+- **@sec-ccc** — the CCC operator and why only $\beta_{\text{FE}}$; **C5** (first half).
+- **@sec-pipeb** + **@sec-tempering** — importance sampling, the $\hat k$ diagnostic, and your
+  tempering idea, demonstrated; **C1** and **C5** (second half).
+
+Those are the mathematics and demonstrations. Read them in any order — each is self-contained — and
+@sec-response collects all five comments at the end with the answers in hand, so we can check them off
+together.

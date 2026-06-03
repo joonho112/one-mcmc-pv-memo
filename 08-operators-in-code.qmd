@@ -1,0 +1,166 @@
+---
+title: "The Operators in Code"
+---
+
+## Five objects, five functions {#sec-operators}
+
+Everything in Part II reduces to a handful of small R functions. This chapter shows them — quoted
+verbatim from `codebase-v2/R/` — so you can see that the mathematics maps one-to-one onto the code, and
+so that the few places where the implementation differs from a textbook description are visible rather
+than buried. Each excerpt is the load-bearing line or two, not the whole function.
+
+## 1. The stacked bridge — `stack_fractional_posterior()`
+
+The bridge $q_{\text{SWL}}(\psi)\propto p(\psi)\prod_m L_m^0(\psi)^{1/M}$ (@sec-identity) is realized by
+stacking the $M$ plausible values into one long dataset and giving every row the fractional weight
+$1/M$, then handing that to `brms`:
+
+```r
+# stack_fractional_posterior.R
+w_frac <- 1 / M                                   # the 1/M tempering exponent
+d_m[[weight_out_col]] <- base_w_norm * w_frac     # per-row fractional weight
+formula_weighted <- stats::as.formula(
+  sprintf("%s | weights(%s) ~ %s", outcome_col, weight_out_col, rhs))
+```
+
+`brms` reads `y | weights(w) ~ rhs` as a weighted log-likelihood, so the product of the per-row weights
+reproduces the geometric-mean bridge. Two honest notes, consistent with @sec-pipeb: `w_frac` is
+**hard-coded to `1/M`**, not a function argument, so Matt's tempering variant $1/(kM)$ is a deliberate
+source-level sensitivity branch, not a casual toggle; and a supplied survey weight is normalized to mean
+one (`base_w_norm`) before the $1/M$ scaling.
+
+## 2. BRR-Fay assembly — `assemble_pisa_brr_fay_target()`
+
+The variance target of @sec-tmi is built by re-fitting at each replicate weight. The inner helper is a
+plain `lme4` REML fit — **the variance components are re-estimated each time, not pinned**:
+
+```r
+# pisa_brr_fay_target.R  (.brrfay_fixef)
+fit <- lme4::lmer(stats::as.formula(formula_chr), data = d, weights = d$.brr_w,
+                  REML = TRUE,
+                  control = lme4::lmerControl(calc.derivs = FALSE,
+                                              check.conv.singular = "ignore"))
+lme4::fixef(fit)
+```
+
+The per-PV sandwich and the Rubin assembly are three lines:
+
+```r
+mult <- 1 / (R * (1 - fay_k)^2)        # a_d = 1/(80·0.25) = 0.05
+U    <- mult * tcrossprod(D)           # Û_m = a_d Σ_r (β̂_m^(r)-β̂_m)(·)^T
+# ...
+T_MI <- U_bar + (1 + 1 / M) * B        # Rubin total variance
+```
+
+This is the chapter's anchor for the cost story: each `lmer` call is a fast frequentist fit (measured at
+~0.012 s on PISA-scale synthetic data, @sec-tmi), so the 810-fit loop is cheap relative to MCMC.
+
+## 3. Rubin pooling — `rubin_pool_matrix()`
+
+The combining rule of @sec-pv2par is literal:
+
+```r
+# rubin_pool.R
+beta_bar <- rowMeans(beta_pxm)                                  # β̄_Rubin
+U_bar    <- apply(U_array, c(1, 2), mean)                       # within
+beta_centered <- sweep(beta_pxm, 1L, beta_bar, FUN = "-")
+B        <- (beta_centered %*% t(beta_centered)) / (M - 1L)     # between, /(M-1)
+T_MI     <- .swl_symmetrize(U_bar + (1 + 1 / M) * B)           # Ū + (1+1/M)B
+```
+
+Note `B` is built from the parameter vectors `beta_pxm`, never from the outcomes — the point of
+@sec-pv2par made concrete.
+
+## 4. The Cholesky Calibration Correction — `ccc_twolevel()`
+
+The operator of @sec-ccc, $\beta^{\text{cal}} = c + A(\beta-\bar\beta^{\text{raw}})$ with
+$A=L_{\text{target}}L_{\text{raw}}^{-1}$, computed with the **lower-triangular** convention and a
+forward-solve:
+
+```r
+# ccc_twolevel.R  (step 5: calibration matrix)
+L_raw <- t(U_raw)                         # chol() is upper-tri; lower L = t(U)
+L_tgt <- t(U_target)
+L_raw_inv <- forwardsolve(L_raw, diag(p))
+A <- L_tgt %*% L_raw_inv                  # A = L_target L_raw^{-1}
+```
+
+The map is applied to the fixed-effect block while the variance-component draws pass through a block of
+the identity (`.ccc_block_expand`), and the reshape itself is one sweep–matmul–sweep:
+
+```r
+A_full[(p_fe+1L):(p_fe+p_vc), (p_fe+1L):(p_fe+p_vc)] <- diag(p_vc)   # VC passthrough
+centered     <- sweep(draws_fe, 2L, psi_hat, FUN = "-")
+rotated      <- centered %*% t(A)
+draws_fe_cal <- sweep(rotated, 2L, psi_hat, FUN = "+")
+```
+
+Two implementation realities matching @sec-ccc: there is **no `cov.wt`** anywhere — the weighted variant
+uses a *self-normalized* weighted covariance,
+
+```r
+# engine_facade.R  (.swl_engine_weighted_cov; w pre-normalized to sum 1)
+mu <- colSums(x * w); centered <- sweep(x, 2L, mu, FUN = "-")
+out <- crossprod(centered, centered * w)      # Σ w_s (β_s-μ)(β_s-μ)^T, denom 1
+```
+
+— and the numerical guard is a *conditional* nearest-PD eigenvalue floor at `eps = 1e-10`
+(`.ccc_nearpd`), not an unconditional Tikhonov ridge.
+
+## 5. The pipeline runners
+
+Three thin drivers assemble the operators above. Their signatures show the division of labor:
+
+```r
+pipeline_a_orthodox(per_pv_draws, run_id, dataset_id, estimand_id, center, conf_level)
+pipeline_b_stacked_psis(draws, data, pv_cols, Sigma_target_by_pv, ccc_target_mode,
+                        khat_threshold = swl_pipeline_b_psis_guard_policy()$khat_threshold, ...)
+pipeline_c_direct(data, formula, pv_cols, Sigma_target, Sigma_target_source, ...)
+```
+
+Pipeline B's importance-sampling core is exactly the three lines of @sec-pipeb:
+
+```r
+# pipeline_b_stacked_psis.R
+log_r       <- log_p - log_q                         # per-PV log importance ratio
+psis_obj    <- loo::psis(log_r)                      # Pareto-smoothed IS
+khat_values <- loo::pareto_k_values(psis_obj)        # the k̂ gate (default 0.7)
+```
+
+Pipeline C carries the anti-silo guardrail that @sec-tmi promised — it **refuses** a target that looks
+self-derived or mock, so a quietly-under-covering $V_{q,\text{rep}}$ or a smoke-test placeholder cannot
+slip into the headline. There are *two* checks. The first is a string-marker veto — self-certifying, in
+that it fires only when the caller labels the target:
+
+```r
+# pipeline_c_direct.R — (i) string-marker veto (self-certifying)
+if (any(grepl("mock|sham|placeholder|fallback|self[_-]?target|raw[_-]?stack|posterior[_-]?cov|stack_fractional",
+              target_markers)))
+  stop("Sigma_target must be an external confirmatory target; mock/sham/fallback forbidden")
+```
+
+The second is the substantive one — a *numerical* check that refuses any $\Sigma_{\text{target}}$
+proportional to the raw stacked fixed-effect covariance, catching a self-target whether or not it carries a
+label (the case the string veto would miss):
+
+```r
+# pipeline_c_direct.R — (ii) numerical self-proportionality veto
+ratio    <- sum(Sigma_target * raw_fe_cov) / sum(raw_fe_cov^2)
+residual <- max(abs(Sigma_target - ratio * raw_fe_cov))
+if (ratio > 0 && residual <= 1e-8 * max(1, max(abs(Sigma_target))))
+  stop("Sigma_target must not be self/proportional to the raw stacked fixed-effect covariance")
+```
+
+## The one-to-one map
+
+| Math object (Part II) | R function | File | Key line |
+|---|---|---|---|
+| bridge $q_{\text{SWL}}$, $1/M$ | `stack_fractional_posterior()` | `stack_fractional_posterior.R` | `w_frac <- 1/M` |
+| $\hat U_m^{\text{BRR-Fay}}$, $T_{\text{MI}}$ | `assemble_pisa_brr_fay_target()` | `pisa_brr_fay_target.R` | `mult*tcrossprod(D)`; `U_bar+(1+1/M)*B` |
+| Rubin $\bar\beta$, $T_{\text{MI}}$ | `rubin_pool_matrix()` | `rubin_pool.R` | `(1+1/M)*B` |
+| CCC $A=L_tL_r^{-1}$ | `ccc_twolevel()` | `ccc_twolevel.R` | `L_tgt %*% forwardsolve(L_raw, diag(p))` |
+| pipelines A/B/C | `pipeline_{a,b,c}_*()` | resp. files | `loo::psis`; external-target guard |
+
+The verification we already ran in the project de-risk — the CCC residual at $4\times10^{-17}$, the
+$0.012$ s REML fit, the clean load of all 25 files — exercised exactly these functions. Part IV now puts
+them on data with a known answer.

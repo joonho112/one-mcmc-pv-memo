@@ -1,0 +1,181 @@
+---
+title: "Where the External Variance Comes From: BRR-Fay Assembly"
+---
+
+## Your question, squarely answered {#sec-tmi}
+
+This is the chapter you asked for most directly. Two of your comments land on the same object:
+
+::: {.matt}
+**C4** (on the external $T_{\text{MI}}$): I don't understand where this comes from? isn't it model
+specific and needs to be computed by estimating multiple models?
+
+**C2** (on $T_{\text{MI}}$ generally): How do we get this without using A or B methods?
+:::
+
+Both instincts are exactly right, and I want to say so plainly: $T_{\text{MI}}$ **is** model-specific,
+and it **does** require fitting many models. The only correction is *which* fits. They are
+$M(R{+}1) = 810$ **fast frequentist `lme4` REML fits** — not MCMC chains — assembled by a self-contained
+subroutine, **BRRFay-2L**, that uses only `lme4` and the published replicate weights and never calls
+any pipeline's sampler. So "without A or B" does not mean the target is free or pipeline-specific; it
+means the variance machinery is *orthogonal* to the MCMC.
+
+## The per-PV BRR-Fay sandwich
+
+PISA 2022 ships a final student weight `W_FSTUWT` and $R = 80$ replicate weights
+`W_FSTURWT1`…`W_FSTURWT80`, built by Fay's balanced repeated replication with shrinkage $k = 0.5$. The
+PISA Technical Report (Formula 10.9) anchors the design variance with the multiplier
+$$
+a_d = \frac{1}{R(1-k)^2} = \frac{1}{80\times 0.25} = 0.05.
+$$
+For each plausible value, let $\hat\beta_m$ be the full-weight fixed-effect estimate and
+$\hat\beta_m^{(r)}$ the estimate under replicate weight $r$. Conceptually these are the GLS solves
+$\hat\beta_m = (X^\top\Omega X)^{-1}X^\top\Omega y^{(m)}$ and $\hat\beta_m^{(r)} = (X^\top\Omega^{(r)}X)^{-1}X^\top\Omega^{(r)}y^{(m)}$
+(from @sec-pv2par); in the *implementation* each is obtained by a survey-weighted two-level REML fit,
+`lme4::lmer(y ~ … + (1|school), weights = w_r)`, with the replicate weights scaled per Pfeffermann's
+two-level convention. The **per-PV BRR-Fay sandwich** is the matrix form of the Fay variance,
+$$
+\hat U_m^{\text{BRR-Fay}} = a_d\sum_{r=1}^R \bigl(\hat\beta_m^{(r)}-\hat\beta_m\bigr)\bigl(\hat\beta_m^{(r)}-\hat\beta_m\bigr)^\top \in \mathbb R^{p\times p},
+$$
+and the Rubin assembly of @sec-pv2par gives $\bar U = M^{-1}\sum_m\hat U_m^{\text{BRR-Fay}}$, the between
+term $B$, and
+$$
+T_{\text{MI}} = \bar U + \Bigl(1+\tfrac1M\Bigr)B.
+$$
+This is the whole of $T_{\text{MI}}$: a $p\times p$ object in parameter space, model-specific (it encodes
+the two-level model), assembled from many model fits — exactly as you suspected.
+
+## The 810-fit count, and why the fits are cheap
+
+Per PV: one full-weight fit plus $R = 80$ replicate fits $= 81$. Over $M = 10$ PVs,
+$$
+M(R+1) = 10 \times 81 = 810 \text{ mini-fits per country}.
+$$
+That is the literal "multiple models" of your C4. The decisive fact is the cost of *each*. These are
+`lme4` REML fits — iterative, but fast: in the deployed code (`brr_fay_U_one_pv()`, @sec-operators) each
+replicate is a full survey-weighted `lmer(..., REML = TRUE)` that re-estimates its own variance
+components, which is the standard (and conservative) BRR practice. I benchmarked one such fit at PISA-USA
+scale — synthetic $n = 4{,}620$, $J = 154$, two slopes — and it returns in about **0.012 s**
+(`code/01_brrfay_timing.R`). At that rate the full 810-fit loop is on the order of **ten seconds**
+single-threaded; with a richer covariate set or default `lmer` controls, allow up to ~1–2 s per fit and
+the loop is still only **15–30 minutes**. Either way it is orders of magnitude below MCMC.
+
+The contrast is the point (the single-MCMC figures below are the times we *measured* on the real PISA
+data in @sec-pisa-results; the Pipeline A total is ten times the measured single fit):
+
+| | Pipeline A | BRR-Fay loop | Pipeline C MCMC |
+|---|:---:|:---:|:---:|
+| Fits per country | $M=10$ MCMC | $810$ `lme4` REML | $1$ MCMC |
+| Cost per fit | $\sim$10–26 min | **$\sim$0.01–2 s (measured/bounded)** | $\sim$10–26 min |
+| **Total per country** | **$\sim$2–4 h** | **seconds to ~30 min** | **$\sim$10–26 min** |
+
+(The single-MCMC range is the measured USA-to-Korea span, ~10 min and ~26 min respectively, @sec-pisa-results.)
+Had one tried to compute BRR-Fay variance by *MCMC* refits, the cost would be $810\times 10\text{–}26$
+min — weeks of wall-clock per country. That is why BRRFay-2L is committed to frequentist REML: not a
+corner cut, but the only feasible route, and a very cheap one. The PV loop parallelizes trivially over
+$M$ cores, so even the pessimistic bound drops to a few minutes.
+
+*An optional speed-up, not the default.* If the variance components are *pinned* at a single pilot
+$\hat V$ (the R3a regime of @sec-identity), each replicate collapses to a genuine closed-form GLS solve
+— faster still, and exactly the setting in which Theorem 2.2 holds. The deployed code does **not** pin
+them; it re-fits fully per replicate. We flag the pinned variant only because it is the bridge between
+this chapter's cost argument and Chapter 3's exactness argument.
+
+## The BRRFay-2L algorithm
+
+Deterministic throughout — an outer PV loop, an inner replicate loop, then a standard Rubin assembly.
+No sampler, no convergence audit beyond each REML fit's own.
+
+```
+Algorithm BRRFay-2L
+Inputs:  long-form data (M PVs, R=80 replicate weights, design X);
+         a_d = 1/(R(1-k)^2) = 0.05
+  1.  for m = 1..M:
+        β̂_m ← weighted-REML fixef of y^(m) at full weight        # lme4::lmer
+        for r = 1..R:
+          β̂_m^(r) ← weighted-REML fixef of y^(m) at replicate weight W^(r)
+        Û_m ← a_d · Σ_r (β̂_m^(r) − β̂_m)(β̂_m^(r) − β̂_m)ᵀ
+  2.  β̄_Rubin ← M^{-1} Σ_m β̂_m
+  3.  Ū ← M^{-1} Σ_m Û_m
+  4.  B ← (M−1)^{-1} Σ_m (β̂_m − β̄_Rubin)(β̂_m − β̄_Rubin)ᵀ
+  5.  T_MI ← Ū + (1 + 1/M) B
+Output:  {β̂_m}, {Û_m}, β̄_Rubin, Ū, B, T_MI
+        (optional R3a speed-up: pin variance components at a pilot V̂ → closed-form GLS solves)
+```
+
+## BRRFay-2L is shared by all three pipelines
+
+Here is the direct answer to C2's "without A or B." BRRFay-2L is not part of Pipeline A, B, or C-Direct
+— it is a **pipeline-independent module** that runs once and feeds all three:
+
+| Pipeline | CCC center | CCC target | BRRFay-2L output used |
+|---|---|---|---|
+| A (orthodox) | $\hat\beta_m$ per PV | $\hat U_m^{\text{BRR-Fay}}$ per PV | per-PV sandwiches ($M$ calls) |
+| B (PSIS) | $\hat\beta_m^{\text{PSIS}}$ per PV | $\hat U_m^{\text{BRR-Fay}}$ per PV | per-PV sandwiches ($M$ calls) |
+| C-Direct | $\bar\beta_{\text{Rubin}}$ | $T_{\text{MI}}$ (pooled) | pooled $T_{\text{MI}}$ directly |
+
+Its inputs are only the replicate weights, the design, the PV vectors — its output is pure `lme4` plus
+matrix algebra, independent of whether inference uses Stan, `brms`, or no sampler at all. **No pipeline
+avoids the 810 fits; none pays them twice.** Pipeline C's economy over Pipeline A is *not* a saving on
+the variance target — both assemble the identical $T_{\text{MI}}$ — but purely a saving on MCMC count,
+ten chains down to one. (One small asymmetry worth naming: Pipeline A uses its ten per-PV MCMC posterior
+means as CCC centers and the BRR-Fay sandwiches as targets. Pipeline C-Direct, by contrast, centers its
+single calibrated cloud at the external $\bar\beta_{\text{Rubin}}$ — the BRR-Fay GLS pooled estimate
+itself, passed in as a numeric vector, *not* the raw stacked posterior mean — so its reported point equals
+Pipeline A's **exactly**, and the R3a→R3b gap of @sec-identity becomes a verification diagnostic that never
+enters the deliverable (@sec-recovery, @sec-pisa-results). The shared 810-fit cost is unaffected.) How each
+pipeline binds its target to the operator is @sec-ccc.
+
+## Why the single MCMC's own covariance cannot substitute
+
+A tempting shortcut: surely the one stacked MCMC already carries the variance, making the external loop
+redundant? It does not, and the reason is structural rather than numerical. Define the **stacked-bridge
+replicate variance**
+$$
+V_{q,\text{rep}} = a_d\sum_{r=1}^R \bigl(\hat\beta^{q,(r)}-\hat\beta^q\bigr)\bigl(\hat\beta^{q,(r)}-\hat\beta^q\bigr)^\top,
+$$
+where $\hat\beta^{q,(r)}$ is the stacked-bridge point estimate under replicate $r$. Under R3a and Theorem
+2.2 applied *per replicate* (@sec-identity), $\hat\beta^{q,(r)} = (X^\top\Omega^{(r)}X)^{-1}X^\top\Omega^{(r)}\bar y$
+— a GLS solve on the PV-average $\bar y$. The between-PV scatter is therefore collapsed into $\bar y$
+*before* any replicate perturbation, and is **lost**:
+$$
+V_{q,\text{rep}} \;\overset{\text{R3a}}{=}\; \bar U \;\preceq\; T_{\text{MI}} = \bar U + (1+\tfrac1M)B.
+$$
+Read this in two registers. The Loewner inequality $\preceq$ is the **R3a** statement: at a common plug-in
+$V$, $V_{q,\text{rep}}$ equals $\bar U$ exactly and $(1+1/M)B \succeq 0$. The **regime-free** fact — the one
+that holds under R3a *or* R3b — is structural rather than Loewner: because $\bar y$ collapses the between-PV
+scatter *before* any replicate perturbation, $V_{q,\text{rep}}$ **misses the entire $(1+1/M)B$ term**
+outright. Under the deployed R3b sampler $V_{q,\text{rep}} \approx \bar U$ is an empirical
+expectation (consistent with how @sec-identity treats R3b), checked rather than assumed. So calibrating
+to $V_{q,\text{rep}}$ rather than $T_{\text{MI}}$ understates the SE by about $\gamma/2$ — a *first-order*
+approximation, tight for the small within-school $\gamma$ but running a little under the exact value for the
+larger between-school $\gamma$ (the $7\%$ quoted below is exact, against a $\gamma/2\approx6.5\%$ linear
+estimate) — and under-covers, with $\gamma = (1+1/M)B/T_{\text{MI}}$ the fraction of missing information. In the @sec-pv2par
+micro-example, the within-school slope ($\gamma\approx0.03$) loses about $1.7\%$ of SE — a nominal 95%
+interval still covers about 94% — while the between-school slope ($\gamma\approx0.13$) loses about $7\%$,
+dropping coverage to roughly 93%. Modest per coefficient, but systematic, one-directional, and worse for
+the contextual ($\beta^B$) effects that are often the substantive target.
+
+Two diagnostic ratios audit any implementation:
+$$
+\rho_1 = \frac{V_{q,\text{rep}}}{\bar U}\quad(\text{expected}\approx 1,\ \textbf{measured not assumed}),
+\qquad
+\rho_2 = \frac{T_{\text{MI}}}{\bar U} = 1+\gamma \quad(\text{the FMI the single fit cannot see}).
+$$
+That $\rho_2 > 1$ — and that it *cannot* be recovered from the stacked fit no matter how long the chain —
+is the numerical statement of why an **external** $T_{\text{MI}}$ is genuinely necessary. As a guardrail,
+`pipeline_c_direct.R` refuses any Pipeline C call whose $\Sigma_{\text{target}}$ is a self-target (equal
+to the raw posterior covariance) or an obvious mock matrix (@sec-operators) — a deliberate block against
+exactly the shortcut that would quietly under-cover.
+
+## The honest one-liner, and what comes next
+
+$T_{\text{MI}}$ is model-specific and takes 810 model fits — but cheap `lme4` REML fits, a shared
+subroutine of seconds to (pessimistically) a few minutes per country, independent of any pipeline's
+MCMC. Pipeline C-Direct's sole advantage over Pipeline A is the MCMC count, one versus ten; the variance
+target costs the same either way, and neither pipeline can read it off a single posterior.
+
+The next chapter (@sec-ccc) shows how $\bar\beta_{\text{Rubin}}$ and $T_{\text{MI}}$ are injected into the
+Cholesky Calibration Correction as center and target, and why the operator acts on $\beta_{\text{FE}}$
+alone. The implementation is `assemble_pisa_brr_fay_target()` with its helper `brr_fay_U_one_pv()`
+(@sec-operators).

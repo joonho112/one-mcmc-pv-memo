@@ -1,0 +1,51 @@
+# Preface {.unnumbered}
+
+Matt — thank you for the careful read of the proposal and for the five comments you left in the
+margin. They land on exactly the right places. This short book is my answer. Its only goal is to
+make **Pipeline B** and especially **Pipeline C** *legible*: to show, from four independent angles,
+that they do what the proposal claims, and in particular to answer your central question —
+**where does the external total variance $T_{\mathrm{MI}}$ come from, and does it secretly require
+fitting the model many times?**
+
+The one-sentence answer, which the rest of the book unpacks, is:
+
+::: {.callout-tip appearance="simple"}
+**The short version.** $T_{\mathrm{MI}}$ *is* model-specific and it *does* require many fits — but
+those are **cheap, fast `lme4` REML replicate refits** ($M(R{+}1)$ of them), **not** MCMC runs.
+That cost is **shared by all three pipelines**; Pipeline C's saving lives entirely in the
+**number of MCMC runs (ten → one)**. Nothing about the variance target is unique to Pipeline C,
+and nothing about it is free — it is the same BRR-Fay machinery the field already runs.
+:::
+
+## How this book is organized
+
+Each chapter is short and aimed at one question. The book answers from four angles in turn:
+
+1. **Mathematics** — the identity that licenses the point estimate, and the exact origin of the
+   variance target (Part II).
+2. **Code** — the actual functions that implement each operator, mapped one-to-one to the math
+   (Part III).
+3. **A controlled simulation** — synthetic data with a *known* ground truth, where we watch
+   Pipeline C recover the truth and reproduce Pipeline A (Part IV).
+4. **PISA 2022** — the three pipelines run side by side on the real data, USA and Korea (Part V).
+
+## Your five comments, and where each is answered
+
+This table is the map of the whole book; @sec-response closes it back out at the end.
+
+| Your comment (verbatim) | Where it points | Short answer | Chapter |
+|---|---|---|---|
+| *"How do we get this without using A or B methods?"* (**C2**, on $T_{\mathrm{MI}}$) | Pipeline C variance | The target is assembled by a **separate, cheap** BRR-Fay computation that every pipeline shares — not by the MCMC. | @sec-tmi |
+| *"I don't understand where this comes from? isn't it model specific and needs … estimating multiple models?"* (**C4**) | Pipeline C variance | Yes — model-specific, and it is $M(R{+}1)$ **REML/GLS replicate refits** (seconds each), not ten MCMC runs (hours each). | @sec-tmi |
+| *"Isn't this for the plausible values $y$ not the model parameters (betas)? How do we connect … to the variance of the parameters?"* (**C3**) | PV vs parameter variance | Each plausible value $y^{(m)}$ is pushed through the regression to a $\hat\beta_m$; the spread of those $\hat\beta_m$ **is** the parameter-space image of measurement uncertainty ($B$). | @sec-pv2par |
+| *"why not do importance resampling for the joint distribution instead of the conditional/profile version?"* (**C5**) | conditional vs joint | The identity is exact only for the **betas** (their GLS gradient is linear in $y$); variance-component scores are not. Joint resampling is exactly what **Pipeline B's PSIS** does — we show both. | @sec-ccc |
+| *"For importance sampling we may want to … temper to get better proposal values … include the modes from the replicate distributions. … double check the pareto version."* (**C1**) | Pipeline B proposal | We adopt your idea: we show how $1/M$, $1/2M$, $1/3M$ tempering flattens the proposal and what it does to the Pareto $\hat k$ diagnostic. | @sec-pipeb, @sec-tempering |
+
+## A note on scope
+
+This is a **demonstration**, not the manuscript. The simulations are deliberately at a
+**smoke / pilot** scale — small enough to run quickly and transparently, large enough to make the
+point. The aim is clarity and correctness, not the final production numbers. Where a claim is
+exact, we prove it; where it is approximate, we say so and show the diagnostic that flags it.
+
+*— JoonHo*

@@ -1,0 +1,191 @@
+---
+title: "The Cholesky Calibration Correction, and Why Only the Betas"
+---
+
+## Two questions in one comment {#sec-ccc}
+
+::: {.matt}
+**C5:** fixing the variance components? why not do importance resampling for the joint distribution
+instead of the conditional/profile version?
+:::
+
+Your fifth comment bundles two distinct challenges. The first is about *scope*: why does the
+calibration touch only the fixed-effect block $\beta_{\text{FE}} = (\beta_1,\beta^W,\beta^B)^\top\in\mathbb R^p$
+and leave the variance components $(\sigma^2_{\text{school}},\sigma^2)$ exactly as the sampler produced
+them? The second is about *method*: granted we are calibrating something, why a deterministic Cholesky
+reshape rather than importance-resampling the joint posterior $\psi$? I answer both, in order.
+
+## The CCC operator
+
+The **Cholesky Calibration Correction** (CCC) is a deterministic, one-shot affine map on a draw cloud.
+For draws $\{\beta_s\}_{s=1}^S\subset\mathbb R^p$, a target center $c\in\mathbb R^p$, and an SPD target
+covariance $\Sigma_{\text{target}}\in\mathbb R^{p\times p}$,
+$$
+\beta_s^{\text{cal}} = c + A\,(\beta_s - \bar\beta^{\text{raw}}), \qquad A = L_{\text{target}}\,L_{\text{raw}}^{-1},
+$$
+where $\bar\beta^{\text{raw}} = S^{-1}\sum_s\beta_s$ and $L_{\text{raw}}, L_{\text{target}}$ are the
+**lower-triangular** Cholesky factors of the raw empirical covariance $\Sigma_{\text{raw}}$ and of
+$\Sigma_{\text{target}}$ ($L L^\top = \Sigma$).
+
+**The R trap.** Base R `chol(Σ)` returns the *upper*-triangular factor $U$ with $U^\top U = \Sigma$; the
+lower factor required here is `t(chol(Σ))`. Getting this wrong silently transposes $A$ and miscalibrates
+the cloud in a way that survives a casual eye-check but fails the matrix residual diagnostic below.
+
+**Deterministic, unlike IWMM.** Importance-weighted moment matching (IWMM) corrects moments by
+*iteratively* reweighting draws until the weighted mean and covariance converge, accumulating stochastic
+noise along the way. CCC closes in a single pass — factor $\Sigma_{\text{raw}}$ and $\Sigma_{\text{target}}$
+once, apply the affine map, done. No iteration, no convergence criterion, no random restart. That
+determinism is a genuine practical advantage when the same operator must run inside every pipeline.
+
+## Three invariants
+
+The map satisfies three invariants by construction.
+
+1. **Mean.** $\operatorname{mean}\{\beta_s^{\text{cal}}\} = c$: centering at $-\bar\beta^{\text{raw}}$ then
+   shifting by $+c$ places the centroid exactly at $c$.
+2. **Covariance.** $\operatorname{Cov}\{\beta_s^{\text{cal}}\} = \Sigma_{\text{target}}$ to machine
+   precision, since $A\Sigma_{\text{raw}}A^\top = L_{\text{target}}L_{\text{raw}}^{-1}\Sigma_{\text{raw}}(L_{\text{raw}}^{-1})^\top L_{\text{target}}^\top = L_{\text{target}}L_{\text{target}}^\top = \Sigma_{\text{target}}$.
+   A hand implementation in this project's de-risk verified the residual
+   $\|A\Sigma_{\text{raw}}A^\top - \Sigma_{\text{target}}\|_{\max} \approx 4\times 10^{-17}$ in double
+   precision. Two qualifications: under PSIS weights (Pipeline B) it is the *weighted* covariance that
+   equals $\Sigma_{\text{target}}$ exactly, not the equal-weight one; and if the nearest-PD repair fires,
+   the identity holds against the repaired $\Sigma_{\text{raw}}$.
+3. **Block.** The map acts on $\beta_{\text{FE}}$ only; the variance-component draws are appended
+   unchanged (in code, `.ccc_block_expand()` places $A$ in the FE block and the identity in the VC block).
+
+**A precision caveat, stated honestly.** Invariants 1–2 match the *first two moments* exactly. CCC does
+**not** claim to correct the posterior beyond mean and covariance: the affine map carries higher-order
+structure of the raw cloud through linearly — skewness and kurtosis are linearly rescaled, not removed.
+CCC is therefore an exact moment-matching operation, and an exact *distributional* correction only when
+the raw draws are Gaussian. For the linear-Gaussian $\beta_{\text{FE}}$ block under a flat prior that is
+the relevant case (@sec-identity), but the limitation is worth naming.
+
+**The MCMC boundary, stated honestly.** In exactly that linear-Gaussian case, the C-Direct deliverable is
+itself closed-form: $\bar\beta_{\text{Rubin}}$ is a GLS solve and $T_{\text{MI}}$ a BRR-Fay assembly, and
+the CCC reshapes *any* input cloud to those two moments. One could report $(\bar\beta_{\text{Rubin}},
+T_{\text{MI}})$ with no sampler at all — as could the orthodox path, since *here* the two coincide by
+Theorem 2.2. Far from a weakness, that is *why* this case is the right place to verify the machinery: an
+exact answer exists to check against (@sec-recovery). The stacked MCMC earns its keep where the framework
+is actually aimed: nonlinear links (logistic or ordinal item-response models), genuinely joint
+variance-component inference, and non-Gaussian posteriors — settings with no closed-form
+$\bar\beta_{\text{Rubin}}$ or $T_{\text{MI}}$, where the one-fit-plus-CCC route is the only practical one
+and the orthodox alternative is not a formula but *ten* MCMC fits. The "one MCMC, not ten" economy is what
+that general case buys; the linear-Gaussian demonstration is what proves the single fit lands in the right
+place.
+
+## Per-pipeline binding
+
+The operator is pipeline-independent; only its three arguments change.
+
+| Pipeline | CCC calls | center $c$ | target $\Sigma_{\text{target}}$ |
+|---|---|---|---|
+| A (orthodox) | $M$ (per PV) | $\hat\beta_m$ | $\hat U_m^{\text{BRR-Fay}}$ |
+| B (stacked-PSIS) | $M$ (PSIS-weighted) | $\hat\beta_m^{\text{PSIS}} = \sum_s\tilde w_{m,s}\beta_s$ | $\hat U_m^{\text{BRR-Fay}}$ |
+| C-Direct | $1$ (pooled) | $\bar\beta_{\text{Rubin}}$ | $T_{\text{MI}} = \bar U + (1+1/M)B$ |
+
+**The $T_{\text{MI}}$ caution.** $T_{\text{MI}}$ is a pre-pooling CCC target *only* for C-Direct, which
+calibrates a single pooled cloud. For A and B the per-PV target is $\hat U_m^{\text{BRR-Fay}}$; injecting
+$T_{\text{MI}}$ per PV would over-disperse each cloud by $(1+1/M)B$, since the between-imputation term
+$B$ is a property of the Rubin pooling step, not of any single PV's posterior. In A and B, $T_{\text{MI}}$
+emerges *post*-pooling.
+
+**The center is external, by construction.** In the deployed code C-Direct's center $c$ is the numeric
+$\bar\beta_{\text{Rubin}}$ — the BRR-Fay GLS pooled estimate, passed in as an external vector, not the raw
+stacked posterior mean. So the center column above is *literal*: because the map places the calibrated
+centroid at $c$ regardless of where the raw cloud sits (invariant 1), C-Direct's reported point equals
+Pipeline A's **exactly**, and the R3a→R3b distance between the stacked posterior mean and
+$\bar\beta_{\text{Rubin}}$ becomes a verification diagnostic, never carried into the deliverable
+(@sec-recovery, @sec-pisa-results).
+
+## Why only $\beta_{\text{FE}}$: three compounding reasons
+
+**1 — Theorem 2.2 supplies an exact target only for $\beta_{\text{FE}}$.** The identity of @sec-identity
+rests on the GLS gradient being *linear* in $y^{(m)}$, which makes the stacked-bridge mode for
+$\beta_{\text{FE}}$ exactly $\bar\beta_{\text{Rubin}}$ — a closed-form calibration center. The profile
+score for $\sigma^2_{\text{school}}$ carries a $-\tfrac12\log\det V$ term and a quadratic in $y^{(m)}$,
+both nonlinear; "average the per-PV scores" is no longer "evaluate at $\bar y$," and no clean Rubin-pool
+anchor results. The stacked mode for $\sigma^2_{\text{school}}$ drifts from the Rubin-averaged value by a
+small amount — on the order of a percent or two at PISA scale, which we *report* in Part IV rather than
+assume (consistent with the R3a/R3b honesty of @sec-identity). A calibration whose own anchor is
+approximate cannot ground a precise CCC step.
+
+**2 — No design-based variance-component target is built in this paper.** The CCC targets for
+$\beta_{\text{FE}}$ — $\hat U_m^{\text{BRR-Fay}}$ and $T_{\text{MI}}$ — come from the BRR-Fay loop of
+@sec-tmi, which is design-valid because $\hat\beta_m$ is (conceptually) linear in the weights. A parallel
+BRR-Fay loop on *variance components* — forming a replicate sandwich of $\hat\sigma^2_{\text{school},m}$ —
+would need its own replicate-REML routine and raises identification questions under PV stacking. That is
+the scope of the follow-up paper (the Williams–McGuire–Savitsky variance-component framework), not this
+one. Without a design-based VC target, there is nothing for a VC-CCC step to match.
+
+**3 — Support preservation: the structural safety reason.** This is the strongest of the three and it is
+structural, not epistemic. $\beta_{\text{FE}}\in\mathbb R^p$ is *unconstrained*, so the affine map is
+valid everywhere — it cannot move a draw out of the parameter space. Variance components obey
+$\sigma^2,\sigma^2_{\text{school}}>0$; their support is the positive orthant, and an affine map applied to
+draws near the boundary *can* push them negative, violating the constraint — no choice of target rescues
+an affine reshape *on the natural scale*. (A variance-component calibration would instead work on an
+unconstrained reparameterization such as $\log\sigma^2$ and exponentiate back — exactly the kind of extra
+machinery we defer to the follow-up paper.) On the natural scale, the CCC operator and variance-component
+geometry are simply incompatible.
+
+## Why not jointly importance-resample the whole vector?
+
+Your alternative — importance-resample $\psi = (\beta_{\text{FE}},\sigma^2_{\text{school}},\sigma^2)$
+jointly — is coherent, and it is worth being precise about what it would mean.
+
+First, CCC is *not* resampling. Every draw the sampler produced appears in the calibrated output, with no
+thinning and no duplication; it is a reshape, not a redraw. Importance resampling instead draws a new
+sample with probabilities proportional to weights, introducing discrete approximation error and
+discarding low-weight draws.
+
+Second, joint importance resampling of $\psi$ over the $\beta_{\text{FE}}$ block *is* exactly what Pipeline
+B does (@sec-pipeb): the stacked bridge $q_{\text{SWL}}$ is the proposal, the per-PV likelihood ratio
+$L_m^0(\beta_s)/q_{\text{SWL}}(\beta_s)$ gives the weights, and PSIS stabilizes the tails. So the rigorous
+form of "use importance resampling" is already implemented. The real question is whether to extend it to
+the variance-component directions — and here the heavy-tail risk you raised in C1 bites directly. The
+bridge is, by Theorem 2.2, a *good* proposal for $\beta_{\text{FE}}$ (its mode sits at
+$\bar\beta_{\text{Rubin}}$, where the per-PV posteriors concentrate). For $\sigma^2_{\text{school}}$ there
+is no such alignment guarantee: in a high-ICC setting (Korea's *mathematics* ICC $\approx 0.45$; the
+reading data analyzed in @sec-pisa-setup is milder) the marginal can be
+sharply peaked with a heavy right tail, and the all-PV bridge can misplace its mass relative to a single
+PV's posterior — exactly the high-$\hat k$, unreliable-PSIS regime. So extending joint IS to the VC
+directions would walk into the tail problem *without* the mode-alignment that keeps $\hat k$ manageable in
+the $\beta_{\text{FE}}$ directions.
+
+The resulting strategy is therefore not a restriction of joint IS but the joint strategy with each block
+given its correct treatment:
+
+- **$\beta_{\text{FE}}$:** deterministic CCC by default (A, C-Direct); Pipeline B adds PSIS resampling in
+  these directions with a Pareto-$\hat k$ gate — preferred when $\hat k_m<0.7$, falling back to C-Direct
+  otherwise.
+- **$(\sigma^2_{\text{school}},\sigma^2)$:** identity passthrough here; design-based VC calibration,
+  including the joint-IS question, is the follow-up paper.
+
+## Weighted CCC for Pipeline B
+
+When Pipeline B supplies normalized PSIS weights $\{\tilde w_{m,s}\}$ ($\sum_s\tilde w_{m,s}=1$), the raw
+moments become their weighted counterparts,
+$$
+\bar\beta^{\text{raw}} = \sum_s \tilde w_{m,s}\,\beta_s,
+\qquad
+\Sigma_{\text{raw}} = \sum_s \tilde w_{m,s}\,(\beta_s-\bar\beta^{\text{raw}})(\beta_s-\bar\beta^{\text{raw}})^\top,
+$$
+the **self-normalized** weighted covariance the engine actually computes (the weights sum to one; the
+engine uses this convention deliberately rather than a Bessel-corrected estimator, the difference being
+$O(\sum_s\tilde w_{m,s}^2)$ — negligible at the draw counts used). Should $\Sigma_{\text{raw}}$ come out
+numerically non-positive-definite, a *conditional* nearest-PD repair (an eigenvalue floor at
+$\varepsilon\cdot\operatorname{tr}(\Sigma_{\text{raw}})/p$ with $\varepsilon = 10^{-10}$) is applied before
+the Cholesky — it fires only when needed, not as an unconditional ridge.
+The per-draw map is unchanged; only the ingredients of $A$ reflect the reweighting. Unweighted CCC (A,
+C-Direct) is the special case $\tilde w_{m,s}=1/S$. In code a single `draw_weights` argument to
+`engine_ccc()` covers both (@sec-operators).
+
+## Summary
+
+CCC is deterministic, non-iterative, and exact on $\beta_{\text{FE}}$ in the moment sense — mean $c$ and
+covariance $\Sigma_{\text{target}}$ to machine precision — though not a full distributional correction
+beyond Gaussianity. The restriction to $\beta_{\text{FE}}$ compounds three justifications: Theorem 2.2
+gives an exact anchor only there; no design-based VC target is built in this paper; and the affine map is
+structurally unsafe on positivity-constrained parameters. Joint importance resampling is available as
+Pipeline B for the $\beta_{\text{FE}}$ directions, with a Pareto-$\hat k$ diagnostic (@sec-pipeb); the
+variance-component directions are the follow-up paper. The code is `ccc_twolevel()` / `engine_ccc()`
+(@sec-operators).

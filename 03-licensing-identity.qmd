@@ -1,0 +1,238 @@
+---
+title: "The Licensing Identity: One Fit Gives the Pooled Point Estimate"
+---
+
+## Setup {#sec-identity}
+
+This chapter does one thing: it proves that running **one** MCMC on the stacked fractional bridge and
+reading off the posterior mean over the fixed effects yields **exactly** the Rubin-pooled point
+estimate $\bar\beta_{\text{Rubin}}$ — where, as I will be careful to define, $\bar\beta_{\text{Rubin}}$
+is the pooled estimate at a *common plug-in* variance. That algebraic fact — Theorem 2.2 — is the
+license for Pipeline C's *point estimate*. It says nothing, by itself, about variance: the raw spread
+of the stacked posterior is *not* the right uncertainty, and correcting it is the job of @sec-tmi and
+@sec-ccc. Here we nail only the center.
+
+## The two-level hybrid model
+
+Students $i$ are nested in schools $j$. For plausible value $m$, the Allison hybrid random-intercept
+model is
+$$
+y_{ij}^{(m)} = \beta_1 + \sum_{k=1}^{K} \beta_k^{W}\bigl(x_{k,ij} - \bar x_{k\cdot j}\bigr)
+            + \sum_{k=1}^{K} \beta_k^{B}\,\bar x_{k\cdot j} + \zeta_j + \epsilon_{ij}^{(m)},
+\qquad \zeta_j \sim N(0,\sigma^2_{\text{school}}),\ \ \epsilon_{ij}^{(m)} \sim N(0,\sigma^2).
+$$
+The intercept $\beta_1$, the within-school slopes $\beta^W$, and the between-school slopes $\beta^B$
+are collected into the fixed-effect block $\beta_{\text{FE}} = (\beta_1, \beta^W, \beta^B)^\top \in
+\mathbb{R}^{p}$, $p = 2K+1$ — the sole inferential target of this chapter. Marginalizing over $\zeta_j$
+gives a Gaussian with block-diagonal covariance
+$$
+V = \operatorname{blkdiag}_j\!\bigl(\sigma^2 I_{n_j} + \sigma^2_{\text{school}}\,\mathbf 1_{n_j}\mathbf 1_{n_j}^\top\bigr),
+\qquad \Omega = V^{-1}.
+$$
+Writing $X$ for the $n\times p$ hybrid design (its columns are the constant, the within-school
+deviations $(x_{k,ij}-\bar x_{k\cdot j})$, and the school means $\bar x_{k\cdot j}$) and stacking
+students into $y^{(m)}\in\mathbb R^n$, the per-PV GLS log-likelihood **at fixed $V$** is
+$$
+\log L_m^0(\beta_{\text{FE}};V) = -\tfrac12\bigl(y^{(m)}-X\beta_{\text{FE}}\bigr)^\top\Omega\bigl(y^{(m)}-X\beta_{\text{FE}}\bigr) + \text{const}(V).
+$$
+The constant absorbs $-\tfrac12\log\det V$, which does not depend on $\beta_{\text{FE}}$ at fixed $V$ —
+the same $\log\det V$ term that, *because* it is independent of $y$, will make the variance-component
+score nonlinear later in this chapter.
+
+**A word on survey weights.** PISA estimation is survey-weighted, and I have written $\Omega$ without
+a weight matrix only for readability. Two facts make this harmless for the present identity. First,
+the survey weights index students and the sampling design — not *which* plausible value — so they are
+**common across the $M$ PVs** and enter every $L_m^0$ identically; that PV-invariance is the only thing
+the proof below uses. Second, our pipeline does not inject design-based uncertainty through the
+likelihood at all: $L_m^0$ carries the model, and the design-based variance enters *separately*,
+through the external BRR-Fay target of @sec-tmi. So whether one folds the (PV-common) weights into
+$\Omega$ as a weighted pseudo-likelihood or keeps $L_m^0$ as the unweighted working likelihood, the
+*centering* identity of this chapter is unaffected. The weights matter enormously for the variance —
+they are the heart of @sec-tmi — but not for the center.
+
+## The stacked fractional bridge
+
+All three pipelines that use one MCMC sample from the stacked fractional bridge
+$$
+\log q_{\text{SWL}}(\psi) = \log p(\psi) + \frac{1}{M}\sum_{m=1}^{M}\log L_m^0(\psi) + C,
+\qquad \psi = (\beta_{\text{FE}},\sigma^2_{\text{school}},\sigma^2).
+$$
+The $1/M$ exponent is the crucial design choice, and it is worth seeing *why* in information terms.
+Each $\log L_m^0$ carries Fisher information $X^\top\Omega X$ for $\beta_{\text{FE}}$. The naive stack
+$\sum_m \log L_m^0$ would accumulate $M\cdot X^\top\Omega X$ — fabricating $M$-fold replication, as if
+the ten plausible values were ten independent surveys rather than ten draws from one latent
+distribution. Multiplying each contribution by $1/M$ restores exactly one dataset's worth of
+information: $q_{\text{SWL}} \propto p(\psi)\,[\prod_m L_m^0(\psi)]^{1/M}$ is the **geometric mean** of
+the $M$ per-PV likelihoods. One MCMC fit, single-PV information content. In code the exponent is the
+per-row weight $1/M$ on a long-stacked dataset (`stack_fractional_posterior()`; see @sec-operators).
+
+## Regularity conditions
+
+The proof uses four conditions; I separate the one that controls *exactness* from the rest.
+
+- **R0 — flat prior.** $p(\beta_{\text{FE}})\propto 1$. The identity is exact in the MLE/mode regime. A
+  proper Gaussian prior does *not* break the stacked-versus-per-PV correspondence — under a *common* prior
+  the stacked-bridge MAP still coincides with the per-PV MAP (verified in `falsify_theorem22.R` §F3). What a
+  proper prior adds is shrinkage relative to the flat-prior Rubin *target*; where a weakly informative prior
+  is used for sampler stability we keep it diffuse enough that this shrinkage gap is negligible.
+- **R2 — common design.** $X$ (and any PV-common survey weighting) is identical across the $M$ PVs.
+  Automatic for PISA: plausible values vary the outcome, not the covariates — provided the cluster
+  means $\bar x_{k\cdot j}$ are computed once from the full sample, not per imputation.
+- **R3a — common plug-in $V$.** A single pilot $(\hat\sigma^2,\hat\sigma^2_{\text{school}})$ is fixed,
+  so $\Omega$ is the *same matrix* in every per-PV solve **and** in the stacked solve. **This is the
+  condition that makes the identity exact**; its relation to the real (joint) MCMC and to conventional
+  separate-fit pooling is the subject of the honesty section below.
+- **R5 — invertibility.** $X^\top\Omega X$ is positive definite — equivalently, $X$ has full column
+  rank and $\Omega\succ 0$ — which holds for the PISA USA and KOR designs.
+
+## Theorem 2.2 (the licensing identity)
+
+Let $\hat\beta_{\text{FE},m} = (X^\top\Omega X)^{-1}X^\top\Omega\,y^{(m)}$ be the per-PV GLS estimate
+**at the common plug-in $\Omega$** of R3a, and let $\bar\beta_{\text{Rubin}} = M^{-1}\sum_m
+\hat\beta_{\text{FE},m}$ be the corresponding (fixed-$\Omega$) Rubin pooled estimate. Let
+$\hat\beta_{\text{FE}}^q$ be the maximizer of $\log q_{\text{SWL}}$ over $\beta_{\text{FE}}$ at that
+same fixed $V$.
+
+> **Theorem 2.2.** Under R0, R2, R3a, R5,
+> $$
+> \hat\beta_{\text{FE}}^q
+> = \arg\max_{\beta_{\text{FE}}}\frac1M\sum_{m=1}^M\log L_m^0(\beta_{\text{FE}};V)
+> = \frac1M\sum_{m=1}^M \hat\beta_{\text{FE},m}
+> = \bar\beta_{\text{Rubin}}.
+> $$
+> Moreover, under R0 the $q$-marginal in $\beta_{\text{FE}}$ is Gaussian, so its **mode and mean
+> coincide**: $\hat\beta_{\text{FE}}^q = \mathbb E_q[\beta_{\text{FE}}]$. The equality is exact in
+> arithmetic; in finite precision the residual sits at the floating-point level (verified numerically
+> in Part IV).
+
+Two clarifications belong with the statement. First, the "mode = mean" clause is what lets Pipeline C
+read its point estimate straight off the stacked posterior *mean* — no separate per-PV refit is needed
+to obtain the center. Second, and this is essential to state honestly: $\bar\beta_{\text{Rubin}}$ here
+is the **fixed-$\Omega$** pooled estimate. It equals the number a practitioner would get from $M$
+*separately* fitted mixed models — each of which re-estimates its own $\Omega_m = V_m^{-1}$ — only up
+to the R3a-vs-R3b gap of the next section. The separate-fit pool is an R3b object; Theorem 2.2 is an
+R3a statement.
+
+### Proof
+
+**Step 1 — per-PV score.** Differentiating $\log L_m^0$ in $\beta_{\text{FE}}$,
+$$
+\nabla_{\beta_{\text{FE}}}\log L_m^0 = X^\top\Omega\,y^{(m)} - X^\top\Omega X\,\beta_{\text{FE}}.
+$$
+This score is **affine-linear in $y^{(m)}$**, and the term $X^\top\Omega X\,\beta_{\text{FE}}$ does not
+depend on $m$. That linearity is the load-bearing fact of the whole theorem.
+
+**Step 2 — stacked gradient.** Under R0 the prior gradient vanishes, so
+$$
+\nabla_{\beta_{\text{FE}}}\Bigl[\tfrac1M\textstyle\sum_m\log L_m^0\Bigr]
+= \frac1M\sum_{m=1}^M\bigl[X^\top\Omega\,y^{(m)} - X^\top\Omega X\,\beta_{\text{FE}}\bigr]
+= X^\top\Omega\,\bar y - X^\top\Omega X\,\beta_{\text{FE}},
+$$
+with $\bar y = M^{-1}\sum_m y^{(m)}$. R2 (common $X$, common weighting) and R3a (common $\Omega$) are
+exactly what let $X^\top\Omega X$ and $X^\top\Omega$ come out of the sum; if either varied with $m$,
+the average could not collapse to a single matrix acting on $\beta_{\text{FE}}$.
+
+**Step 3 — stacked normal equation.** Setting the gradient to zero and using R5,
+$$
+X^\top\Omega X\,\hat\beta_{\text{FE}}^q = X^\top\Omega\,\bar y
+\quad\Longrightarrow\quad
+\hat\beta_{\text{FE}}^q = (X^\top\Omega X)^{-1}X^\top\Omega\,\bar y.
+$$
+
+**Step 4 — average the per-PV equations.** Each per-PV normal equation is
+$X^\top\Omega X\,\hat\beta_{\text{FE},m} = X^\top\Omega\,y^{(m)}$ (same $\Omega$, by R3a); averaging
+over $m$,
+$$
+X^\top\Omega X\,\Bigl[\tfrac1M\textstyle\sum_m\hat\beta_{\text{FE},m}\Bigr] = X^\top\Omega\,\bar y.
+$$
+The stacked equation (Step 3) and the averaged per-PV equations have **identical** right-hand sides;
+by R5 the solution is unique, so $\hat\beta_{\text{FE}}^q = M^{-1}\sum_m\hat\beta_{\text{FE},m} =
+\bar\beta_{\text{Rubin}}$.
+
+**Step 5 — mode equals mean.** At fixed $V$ (R3a) with a flat prior (R0), $\log q_{\text{SWL}}$ is
+quadratic in $\beta_{\text{FE}}$ with Hessian $-X^\top\Omega X \prec 0$ (R5), so the block is exactly
+Gaussian and its mode equals its mean. Note that under R3a the variance components are *fixed, not
+sampled*, so for $\beta_{\text{FE}}$ the marginal and conditional posteriors coincide — the Gaussianity
+is genuine, not an artifact of integrating out $\sigma^2$ (which would generally leave heavier,
+$t$-like tails, exactly the phenomenon behind the variance-component discussion below). $\qquad\square$
+
+*In one sentence:* "average the gradients" equals "evaluate at $\bar y$," so the stacked bridge solves
+the same normal equations as GLS on the PV-averaged outcome.
+
+## R3a vs R3b: exactness and its honest limit
+
+This is the place I most want to be careful with you, because glossing it would undermine the whole
+pipeline. The proof lives in **R3a world**: one pilot $\hat V$ frozen and reused in every solve. There
+the identity is exact, and our Part IV checks put the residual at the floating-point level.
+
+The deployed Pipeline C MCMC lives in **R3b world**: it samples
+$(\beta_{\text{FE}},\sigma^2_{\text{school}},\sigma^2)$ *jointly*, so $\Omega$ is not pinned but
+co-evolves with the chain, and the marginal $p(\beta_{\text{FE}}\mid\text{data})$ is a mixture over
+$V$. Because $\partial\hat\beta(V)/\partial V\neq 0$, the R3a algebra does **not** transfer at theorem
+level to the R3b mode. The same point explains B1's subtlety: the conventional practice — ten
+*separately* fitted mixed models, each with its own $\hat V_m$, then pooled — is likewise an R3b
+comparison, and differs from the fixed-$\Omega$ $\bar\beta_{\text{Rubin}}$ of Theorem 2.2 by a term of
+the same kind.
+
+The point is not that this gap is harmless but that we **measure** it rather than assume it away. For
+each coefficient we report the standardized discrepancy
+$$
+\Delta_{\text{R3b},k} = \frac{\bigl|\hat\beta_k^{\text{R3b}} - \hat\beta_k^{\text{R3a}}\bigr|}{\sqrt{T_{\text{MI},kk}}},
+$$
+where $T_{\text{MI}}$ is the total MI variance defined in @sec-tmi — borrowed here only as a *scale*,
+so the ratio asks "is the R3a-vs-R3b shift small relative to the uncertainty we ultimately report?" We
+apply a traffic-light rule — green $<0.01$, yellow $\le 0.02$, red $>0.02$. There is *reason* to expect
+green at PISA scale: the variance-component posterior concentrates tightly (the posterior SD of
+$\sigma^2_{\text{school}}$ is a small fraction of its mean), so $\hat V$ is a good stand-in for the
+posterior-mean $V$. But that is an empirical expectation, checked in the known-truth simulation of
+Part IV and on the real data in Part V — not a theorem. If a coefficient lands red, we report the R3b
+result directly rather than lean on the identity.
+
+## Why the identity does not extend to the variance components
+
+Theorem 2.2 exploits one structure only: the FE score is linear in $y^{(m)}$. The score for
+$\sigma^2_{\text{school}}$ is not. Differentiating the marginal log-likelihood gives
+$$
+\frac{\partial \log L_m^0}{\partial \sigma^2_{\text{school}}}
+= -\tfrac12\operatorname{tr}\!\Bigl(\Omega\,\tfrac{\partial V}{\partial \sigma^2_{\text{school}}}\Bigr)
++ \tfrac12\,r_m^\top\,\Omega\,\tfrac{\partial V}{\partial \sigma^2_{\text{school}}}\,\Omega\,r_m,
+\qquad r_m = y^{(m)}-X\beta_{\text{FE}}.
+$$
+The first term does not involve $y^{(m)}$ at all (it is the derivative of the $\log\det V$ we set aside
+earlier, and it cannot be averaged away); the second is **quadratic** in $y^{(m)}$, and
+$M^{-1}\sum_m y^{(m)}(y^{(m)})^\top \neq \bar y\,\bar y^\top$ unless all PVs are identical. So "average
+the $m$ scores" $\neq$ "evaluate at $\bar y$," and the stacked mode for $\sigma^2_{\text{school}}$ does
+not equal the Rubin average of the per-PV variance-component estimates. We expect this drift to be
+small at PISA scale, but the chapter does not rely on any particular figure — we report the *measured*
+value in Part IV. What matters here is the structural fact that the drift is **nonzero**, unlike the
+$\beta_{\text{FE}}$ case. This is the formal reason the calibration in @sec-ccc touches the
+$\beta_{\text{FE}}$ block only, and why calibrating the variance components is deferred to the
+follow-up paper.
+
+## Pipeline B does not inherit Theorem 2.2
+
+It is worth saying explicitly that Pipeline B's point estimates do **not** enjoy the exact identity.
+Pipeline B forms per-PV estimates as Pareto-smoothed importance-weighted averages of the shared bridge
+draws, $\hat\beta_{\text{FE},m}^{\text{PSIS}} = \sum_s \tilde w_{m,s}\,\beta_s$ (@sec-pipeb). The
+algebraic cancellation in the proof requires the *exact* maximizer of the gradient equation; a
+finite-sample weighted average is not that maximizer. PSIS recovers the per-PV target only as the
+number of draws $S\to\infty$; in the finite-variance regime ($\hat k_m < 0.5$) the residual shrinks at
+the $O_p(S^{-1/2})$ rate, and more slowly as the Pareto shape $\hat k_m$ rises toward the unreliable
+regime $\hat k_m \ge 0.7$, at which point Pipeline B falls back to A or C-Direct
+[@vehtari_pareto_2024]. Theorem 2.2's exactness is a Pipeline C-Direct statement, full stop.
+
+## Lineage and verification
+
+In the spirit of Si and Reiter [-@si_comparison_2011], who compared posterior simulation against the
+combining rules for multiple imputation, the single-level version of this identity is classical;
+Theorem 2.2 extends it to the two-level Allison-hybrid GLS setting, to fractional PV stacking, and adds
+the explicit R3a/R3b decomposition that does not arise in the single-level case. We do not ask you to
+take the identity on faith: the known-truth simulation in Part IV reports an exactness grid —
+coefficients across a factorial of $J$, cluster size, ICC, and $M$ — and we expect every cell to pass
+to floating-point precision under R3a, shown beside the contrasting $\Delta_{\text{R3b}}$
+sensitivities.
+
+*What this chapter licensed:* the **center**. One stacked fit returns the fixed-$\Omega$
+$\bar\beta_{\text{Rubin}}$ as its posterior mean — exactly under R3a, with a measured gap under R3b and
+relative to conventional separate-fit pooling. The variance story — what $T_{\text{MI}} = \bar U +
+(1+1/M)B$ is, and why the between-imputation term lives in parameter space — is where we turn next.

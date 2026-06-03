@@ -1,0 +1,109 @@
+---
+title: "Response to Your Comments"
+---
+
+## Closing the loop {#sec-response}
+
+This book opened with your five comments and a promise to answer each one from four angles — mathematics,
+code, a known-truth simulation, and PISA itself. Here is the ledger, closed.
+
+::: {.matt}
+**C2** How do we get $T_{\text{MI}}$ without using A or B methods?  ·  **C4** I don't understand where
+this comes from? isn't it model specific and needs … estimating multiple models?
+:::
+
+**You were right — and the saving is narrower than the proposal made it sound.** $T_{\text{MI}}$ *is*
+model-specific and it *does* take many fits. But they are $M(R{+}1)=810$ fast `lme4` REML refits, not
+MCMC runs, assembled by a pipeline-independent BRR-Fay subroutine that all three pipelines share
+(@sec-tmi). In code it is one function, `assemble_pisa_brr_fay_target` (@sec-operators); on the real PISA
+data it ran in about **ten seconds per country** (@sec-pisa-results). Pipeline C does not get the variance
+target "without A or B" in the sense of getting it for free — it gets it from the same cheap machinery
+everyone uses, and its only economy is the MCMC count, ten down to one. And the target is not just
+algebra: in a known-truth simulation with *informative*, unequal-probability sampling, the BRR-Fay
+$T_{\text{MI}}$ delivers nominal interval coverage where ignoring the design collapses to $0.07$
+(@sec-design-coverage) — so it is design-valid, not merely model-valid. (That check stresses *within-school*
+informative selection; informative *school* selection — where the exact two-stage weights bite hardest — is
+the natural next stress-test, flagged rather than claimed.)
+
+::: {.matt}
+**C3** Isn't $(1+1/M)B$ for the plausible values $y$ not the model parameters (betas)? How do we connect
+this to the variance of the parameters?
+:::
+
+**It is a variance of the betas, not of $y$.** Each plausible value is pushed through the GLS map
+$\hat\beta_m=(X^\top\Omega X)^{-1}X^\top\Omega\,y^{(m)}$, and $B$ is the covariance of those ten
+coefficient vectors in parameter space — the missing arrow, drawn explicitly via the sandwich
+$\operatorname{Cov}(\hat\beta_m)=F\operatorname{Cov}(y^{(m)})F^\top$ (@sec-pv2par). The variability
+originates in $y$ but is measured in $\beta$.
+
+::: {.matt}
+**C5** Fixing the variance components? why not do importance resampling for the joint distribution instead
+of the conditional/profile version?
+:::
+
+**Two answers, because it is two questions.** Why only the betas: the licensing identity is exact only for
+the fixed effects (their GLS gradient is linear in $y$), there is no design-based target for the variance
+components in this paper, and an affine map would violate their positivity — so calibrating them is unsafe,
+not merely unmotivated (@sec-ccc). And the simulation made the boundary visible: the fixed-effect identity
+held to $10^{-14}$ while the variance-component "identity" drifted $4.7\%$ at the pilot scale and
+$0.7\%$ at PISA scale (@sec-recovery). Why not
+joint resampling: that *is* Pipeline B's PSIS for the $\beta$ block (@sec-pipeb) — joint variance-component
+resampling walks straight into the heavy-tail problem you flag in C1, which is why we keep it for the
+follow-up paper.
+
+::: {.matt}
+**C1** … for importance sampling we may want to further fit a second time and further temper … Should
+double check the pareto version of importance sampling.
+:::
+
+**We built your ideas and ran them.** The Pareto $\hat k$ gate is in place; the tempering exponent
+$1/(kM)$ is a real lever; the two-MCMC rescue is specified (@sec-pipeb). The experiment of @sec-tempering
+ran $1/M$ vs $1/2M$ vs $1/3M$ on known-truth data: at $1/M$ the worst $\hat k$ was $0.25$ (already
+reliable), tempering pushed it lower still (your mechanism, confirmed), and the point estimate barely
+moved — vindicating your instinct to run $1/M$ first. On the real PISA data the worst $\hat k$ was $0.07$
+(USA) and $0.04$ (Korea) (@sec-pisa-results): the importance sampling is stable there, and Pipeline B's
+*point* tracks A and C-Direct. Its standard errors, though, run a little below the orthodox target — most
+for the between-school slope — because B reweights a single shared draw cloud; a small $\hat k$ certifies
+that the sampler is stable, not that B's multiple-imputation variance equals A's. So C-Direct is the
+reported deliverable, with B the diagnostic alongside it, and the tempering and second-fit levers in
+reserve for harder data.
+
+## The evidence in one place
+
+| Your comment | Answered in math | …in code | …in simulation | …on PISA |
+|---|---|---|---|---|
+| C2, C4 ($T_{\text{MI}}$) | @sec-tmi | @sec-operators | assembled + design-coverage, @sec-design-coverage | 10 s/country, @sec-pisa-results |
+| C3 (PV→$\beta$) | @sec-pv2par | `rubin_pool_matrix` | $B$ in $\beta$-space | — |
+| C5 ($\beta$-only / joint) | @sec-ccc | `ccc_twolevel` | VC drift visible, @sec-recovery | — |
+| C1 (PSIS / tempering) | @sec-pipeb | `loo::psis` | $\hat k$ vs tempering, @sec-tempering | $\hat k=0.04$–$0.07$ |
+
+And the three results that, together, are the whole argument:
+
+- **Theorem 2.2 is exact:** the stacked GLS solution equalled the Rubin estimate to $10^{-14}$ (@sec-recovery).
+- **Pipeline C's point *and* uncertainty are Pipeline A's, exactly:** centered at the external
+  $\bar\beta_{\text{Rubin}}$ and calibrated to the same $T_{\text{MI}}$, C-Direct reproduces A's point
+  ($\max|\hat\beta_C-\hat\beta_A|=0$) and its standard errors ($\max|\text{SE}_C-\text{SE}_A|$ is $0$ to
+  floating point, $\le 3\times10^{-15}$ on PISA) — in simulation and on real data.
+- **It holds on the real data:** USA and Korea, the three pipelines agree in *point* — C-Direct reproduces
+  A's intervals exactly, while B's run narrower (by up to a third for the between-school slope) — at
+  $\hat k=0.04$–$0.07$, with one MCMC instead of ten.
+
+## Where I'd like to go next
+
+A few things I'd value your steer on:
+
+1. **The tempering follow-up.** We now have a first reproduction of the case you sketched: at a simulated
+   PISA scale ($J=150$) the $1/M$ bridge's worst $\hat k$ climbs to $0.83$, past the gate, and Pipeline B
+   fails safe to C-Direct (@sec-recovery) — the large-$n$, separated per-PV "islands" you anticipated,
+   exhibited rather than asserted. I'd like to develop it into a fuller study with the second-fit rescue
+   earning its keep. This feels like a paper-worthy methodological contribution in its own right.
+2. **The exact two-stage weighting.** The substantive PISA story (the between-school gap under exact
+   school-times-conditional-student weights) sits alongside this methodology and is where the empirical
+   headline lives; I'd like to align the pipeline machinery with that weighting next.
+3. **Overleaf.** Thank you for offering to host — yes, let's. I'll port the manuscript skeleton there so
+   the comments and edits flow both ways.
+
+Thank you for comments precise enough to organize a whole book around. If any answer here still doesn't
+land, that is the most useful thing you could tell me.
+
+— JoonHo

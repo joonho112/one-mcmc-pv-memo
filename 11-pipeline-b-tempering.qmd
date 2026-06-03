@@ -1,0 +1,68 @@
+---
+title: "Pipeline B in Practice: a Tempering Experiment"
+---
+
+## Running your idea {#sec-tempering}
+
+In @sec-pipeb we promised to actually run your tempering suggestion rather than just describe it. Here it
+is. On a known-truth dataset ($J=80$ schools, $n=2{,}400$, $M=10$ PVs at reliability $\rho=0.85$, ICC
+$\approx0.26$ — deliberately noisier PVs than the previous chapter, to give the per-PV modes a chance to
+separate), we fit the stacked bridge at three exponents — $1/M$, $1/2M$, $1/3M$ — and for each measured
+two things you flagged: the per-PV Pareto $\hat k$ (does importance sampling stay reliable?) and the
+pooled point estimate (does tempering move it?). The code is `code/03_tempering_demo.R`; three `brms`
+fits, about two minutes.
+
+## What the diagnostic shows
+
+| exponent | $\max_m \hat k$ | $\text{mean}_m \hat k$ | pooled $\beta^W$ | pooled $\beta^B$ |
+|---|:---:|:---:|:---:|:---:|
+| $1/M$ | **0.25** | 0.09 | 0.393 | 0.513 |
+| $1/2M$ | $-0.53$ | $-0.60$ | 0.393 | 0.491 |
+| $1/3M$ | $-0.44$ | $-0.56$ | 0.393 | 0.489 |
+
+![Left: per-PV Pareto $\hat k$ at each tempering level (blue points), with the worst-case in orange and
+the $0.7$ reliability gate in red; all values sit far below it, and tempering pushes them lower still.
+Right: the pooled point estimates are essentially flat across tempering levels — $\beta^W$ is identical to
+three decimals, $\beta^B$ moves by about $0.02$.](figures/tempering_demo.png){#fig-tempering width=100%}
+
+Three readings, each speaking to a part of your comment.
+
+**The $1/M$ bridge is already a reliable proposal here.** The worst per-PV $\hat k$ at $1/M$ is $0.25$ —
+comfortably inside the green ($<0.5$) tier, nowhere near the $0.7$ gate. In this well-behaved Gaussian
+regime, the geometric-mean bridge covers all ten per-PV posteriors well enough that Pareto-smoothed
+importance sampling is stable without any tempering: Pipeline B's *point* and its $\hat k$ diagnostic —
+the "pareto version" you asked us to check — are sound here. (Its pooled standard errors are a separate
+matter, taken up on real data in @sec-pisa-results, where even a tiny $\hat k$ leaves B's intervals below
+the orthodox target.)
+
+**Your tempering does exactly what you predicted.** Flattening the proposal to $1/2M$ and $1/3M$ drives
+$\hat k$ *down* further (into negative territory, i.e. essentially no tail problem at all). This is the
+mechanism you described: a broader proposal covers the per-PV modes more generously, so the importance
+ratios have lighter tails. The lever works. It simply was not needed in this regime — which is itself the
+useful finding, because it tells us *when* to reach for it.
+
+**Tempering barely touches the point estimate — and your instinct to run $1/M$ first is right.** Across
+all three exponents the pooled $\beta^W$ is $0.393$ to three decimals, and $\beta^B$ drifts only from
+$0.513$ to $0.489$ — a couple of hundredths. This is the empirical face of the mode-invariance argument
+of @sec-pipeb: under a weak prior the tempering exponent leaves the mode essentially fixed, so the small
+movement we do see is finite-sample dispersion, not bias. You were right on both counts: tempering is a
+safe tail-coverage lever, and because it costs a little estimate stability for no benefit when $\hat k$ is
+already low, $1/M$ is the right default and the flatter proposals are held in reserve.
+
+## The honest scope
+
+This is one regime, and a benign one — the bridge happened to be a good proposal at $1/M$. Your concern
+was about the *other* case: large $n$, well-separated per-PV "islands," where $\hat k$ at $1/M$ breaches
+the gate. We no longer have to leave that to expectation: the controlled experiment of @sec-recovery
+*reproduces* it — at a simulated PISA scale ($J=150$) the $1/M$ bridge's worst $\hat k$ climbs to $0.83$,
+past the $0.7$ gate, and Pipeline B does the safe thing, refusing to emit and falling back to C-Direct.
+The islands case is no longer hypothetical: the gate is shown to fire, and B to fail safe, on our own data.
+
+The honest scope has two halves, then. When the bridge breaks — islands — the gate catches it and C-Direct
+stands alone. When the bridge holds — as on the real PISA reading data, where $\hat k\le0.07$
+(@sec-pisa-results) — B's point agrees but its pooled standard errors still run below the orthodox target,
+by up to a third for the between-school slope, because B reweights one shared draw cloud. Either way the
+conclusion is the one your comment pointed toward: C-Direct is the reported default — not a patch over a
+broken B, but the deliverable that never builds importance weights in the first place — with B's $\hat k$
+the diagnostic that tells you which regime you are in, and the tempering and two-MCMC levers of @sec-pipeb
+ready for the harder data.
